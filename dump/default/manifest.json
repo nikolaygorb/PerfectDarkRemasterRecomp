@@ -1,0 +1,12 @@
+{
+  "programName": "default.xex",
+  "language": "PowerPC:BE:64:A2ALT-32addr",
+  "imageBase": "0x00000000",
+  "minAddress": "0x82000400",
+  "maxAddress": "0x826da13f",
+  "functionCount": 14041,
+  "exportedAt": "2026-09-03T14:33:09",
+  "decompileEnabled": false,
+  "minAddrFilter": "",
+  "maxAddrFilter": ""
+}
