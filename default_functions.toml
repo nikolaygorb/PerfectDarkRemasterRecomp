@@ -1,0 +1,14 @@
+# Manual function boundaries for addresses that the auto-analyzer didn't
+# discover as functions on its own (only reached via plain `b`, not `bl`,
+# so no call-graph edge pointed at them). Leaving the table empty lets
+# codegen find the natural boundaries itself (size=0 -> discover via region).
+#
+# Found via: rexglue codegen (UnresolvedCall errors during Validate phase).
+
+[functions]
+0x82534F24 = {}
+0x82534F18 = {}
+
+# runtime stub sweep
+0x82450488 = {}
+0x82536028 = {}
