@@ -1,0 +1,9 @@
+assets/*
+!assets/README.md
+!assets/icon.png
+generated/*
+out/*
+rexglue/*
+!rexglue/README.md
+*.log
+

@@ -1,0 +1,82 @@
+[
+  {
+    "name": ".rdata",
+    "start": "0x82000400",
+    "end": "0x8209c6b3",
+    "size": 639668,
+    "read": true,
+    "write": false,
+    "execute": false,
+    "initialized": true
+  },
+  {
+    "name": ".pdata",
+    "start": "0x8209c800",
+    "end": "0x820b1c47",
+    "size": 87112,
+    "read": true,
+    "write": false,
+    "execute": false,
+    "initialized": true
+  },
+  {
+    "name": ".text",
+    "start": "0x820c0000",
+    "end": "0x825bb933",
+    "size": 5224756,
+    "read": true,
+    "write": false,
+    "execute": true,
+    "initialized": true
+  },
+  {
+    "name": ".data",
+    "start": "0x825c0000",
+    "end": "0x8267449b",
+    "size": 738460,
+    "read": true,
+    "write": true,
+    "execute": false,
+    "initialized": true
+  },
+  {
+    "name": ".XBMOVIE",
+    "start": "0x82674600",
+    "end": "0x82674607",
+    "size": 8,
+    "read": true,
+    "write": true,
+    "execute": false,
+    "initialized": true
+  },
+  {
+    "name": ".idata",
+    "start": "0x82680000",
+    "end": "0x826803e9",
+    "size": 1002,
+    "read": true,
+    "write": true,
+    "execute": false,
+    "initialized": true
+  },
+  {
+    "name": ".XBLD",
+    "start": "0x82690000",
+    "end": "0x826900df",
+    "size": 224,
+    "read": true,
+    "write": false,
+    "execute": false,
+    "initialized": true
+  },
+  {
+    "name": ".reloc",
+    "start": "0x82690200",
+    "end": "0x826da13f",
+    "size": 302912,
+    "read": true,
+    "write": false,
+    "execute": false,
+    "initialized": true
+  }
+]
