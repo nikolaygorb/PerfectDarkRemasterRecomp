@@ -1,7 +1,7 @@
-# wetrecomp - hardware / rendering settings
+# PerfectDarkRemasterRecomp - hardware / rendering settings
 #
 # Loaded automatically at startup (see OnConfigurePaths in
-# src/wetrecomp_app.h) and rewritten by the in-game Settings overlay's
+# src/perfectdarkremasterrecomp_app.h) and rewritten by the in-game Settings overlay's
 # "Save to config" button. --flag on the command line and REX_* environment
 # variables always override values from this file - see ../settings/README.md.
 #
@@ -9,7 +9,7 @@
 
 gpu_plugin = "xenos"
 # Graphics API backend rexgpu-xenos loads: "any" (D3D12 first), "d3d12", or
-# "vulkan". Project-defined cvar, see OnPreSetup in src/wetrecomp_app.h.
+# "vulkan". Project-defined cvar, see OnPreSetup in src/perfectdarkremasterrecomp_app.h.
 graphics_backend = "any"
 vsync = false
 resolution_scale = 1

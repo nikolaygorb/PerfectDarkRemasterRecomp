@@ -1,6 +1,6 @@
 # Settings
 
-Two hand-authored, checked-in config files that the `wetrecomp` binary loads
+Two hand-authored, checked-in config files that the `PerfectDarkRemasterRecomp` binary loads
 automatically at startup, plus a downloaded controller mapping database and
 this README.
 
