@@ -3,7 +3,9 @@ assets/*
 !assets/icon.png
 !assets/bin_ico.png
 generated/*
+!generated/rexglue.cmake
 out/*
 tools/benchmark_*
+tools/ExportProgramDump.java
 *.log
 
