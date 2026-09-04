@@ -1,9 +1,9 @@
 assets/*
 !assets/README.md
 !assets/icon.png
+!assets/bin_ico.png
 generated/*
 out/*
-rexglue/*
-!rexglue/README.md
+tools/benchmark_*
 *.log
 
