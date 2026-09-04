@@ -24,7 +24,6 @@ Static recompilation translates the Xbox One PowerPC code inside the game's `def
 - **Texture noise fix** — ported from the community xenia-canary `game-patches` for Perfect Dark (`584109C2`), applied as a direct guest-memory write in [`src/game_patches.h`](src/game_patches.h). Enabled by default in [`settings/hardware.toml`](settings/hardware.toml).
 - **Runtime debug tools** — stub sweep and missing-function scan gated behind the `dev_debug_runtime` cvar; produces `logs/stub_sweep.txt` and `logs/missed_functions.txt` for ongoing work on unregistered addresses.
 - **Performance benchmarking** — `tools/benchmark.ps1` runs the game on both backends for a fixed duration and prints a side-by-side comparison; `tools/analyze_benchmark.py` computes FPS / frame-time percentiles from the CSV.
-- **Ghidra dump exporter** — [`tools/ExportProgramDump.java`](tools/ExportProgramDump.java) exports symbols, functions, disassembly and cross-references from a Ghidra analysis of `default.xex` into `dump/default/`.
 - **SDL gamepad support** — `settings/gamecontrollerdb.txt` is staged next to the exe so controllers SDL doesn't already recognize still work.
 
 ## Requirements
@@ -121,8 +120,7 @@ Rendering/window/vsync and input-backend defaults are checked in under [`setting
 ├── tools/
 │   ├── benchmark.ps1           # D3D12 vs Vulkan benchmark runner
 │   ├── benchmark.sh            # Same, for Linux/macOS
-│   ├── analyze_benchmark.py    # FPS / frame-time statistics from CSV
-│   └── ExportProgramDump.java  # Ghidra script for exporting analysis
+│   └── analyze_benchmark.py    # FPS / frame-time statistics from CSV
 ├── CMakeLists.txt
 ├── CMakePresets.json           # Platform presets (win/linux/mac × amd64/arm64)
 ├── CMakeUserPresets.json       # Local presets (inherits platform presets)
@@ -138,7 +136,7 @@ Rendering/window/vsync and input-backend defaults are checked in under [`setting
 4. Added `GPU_PLUGINS xenos` to the `rexglue_setup_target()` call in `CMakeLists.txt` so `rexgpu-xenos*.dll` gets staged next to the exe.
 5. Added `src/game_patches.h` with the texture-noise fix (ported from xenia-canary `game-patches` for `584109C2`), applied in `OnPostLoadXexImage()`.
 6. Added `src/debug_tools.h` with the stub sweep and missing-function scan, gated behind the `dev_debug_runtime` cvar so they don't run by default.
-7. Added benchmarking tools (`tools/benchmark.ps1`, `tools/analyze_benchmark.py`) and a Ghidra dump exporter (`tools/ExportProgramDump.java`).
+7. Added benchmarking tools (`tools/benchmark.ps1`, `tools/analyze_benchmark.py`).
 
 ## Known issues and difficulties encountered
 
