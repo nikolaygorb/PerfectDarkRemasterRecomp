@@ -11,10 +11,10 @@ gpu_plugin = "xenos"
 # Graphics API backend rexgpu-xenos loads: "any" (D3D12 first), "d3d12", or
 # "vulkan". Project-defined cvar, see OnPreSetup in src/wetrecomp_app.h.
 graphics_backend = "any"
-vsync = true
+vsync = false
 resolution_scale = 1
 async_shader_compilation = true
-native_2x_msaa = true
+native_2x_msaa = false
 anisotropic_override = 0
 
 window_width = 1920
@@ -23,14 +23,28 @@ fullscreen = true
 monitor = 0
 resolution = "1920x1080"
 
+render_target_path_d3d12 = "rtv"
+store_shaders = true
 present_letterbox = true
-
+  
+d3d12_adapter = -1
+d3d12_allow_variable_refresh_rate_and_tearing = true
+d3d12_bindless = true
+d3d12_break_on_error = false
+d3d12_break_on_warning = false
 d3d12_debug = false
+d3d12_dxbc_disasm = false
+d3d12_dxbc_disasm_dxilconv = false
+d3d12_pipeline_creation_threads = -1
+d3d12_queue_priority = 1
+d3d12_submit_on_primary_buffer_end = true
+d3d12_tessellation_wireframe = false
 
-# Experimental: ported xenia-canary game-patches "60 FPS" patch for WET.
-# Off by default (matches upstream) - can affect physics/animation timing.
-# Project-defined cvar, see generated/default/wetrecomp_recomp.218.cpp.
-wet_fps60_unlock = true
+render_target_path_vulkan = "fbo"
+vulkan_log_debug_messages = false
+vulkan_allow_present_mode_immediate = true
+vulkan_allow_present_mode_fifo_relaxed = false
+vulkan_allow_present_mode_mailbox = false
 
 # Experimental: ported xenia-canary game-patches "Fix texture noise on
 # NVIDIA GPUs" patch for Perfect Dark (584109C2). Off by default (matches
@@ -51,4 +65,15 @@ headless = false
 
 # Remove once done - this produces a much larger log file per run.
 #log_level = "trace"
-#log_noisy = true
+#log_level = "error"
+
+# texture fetch constant has invalid type
+gpu_allow_invalid_fetch_constants = true
+
+# Perf CSV log path (per-frame metrics). Empty = disabled.
+# Only works when REXGLUE_ENABLE_PERF_COUNTERS is defined (non-Release).
+#perf_log_csv = "benchmark.csv"
+
+# Enable runtime debug tools (stub sweep, missing function scan).
+# Produces logs/missed_functions.txt and logs/stub_sweep.txt.
+dev_debug_runtime = false

@@ -82,6 +82,13 @@ public class ExportProgramDump extends GhidraScript {
         // "8310C340",  // sub_8310C340
         // "8310C5A0",  // sub_8310C5A0
     };
+    
+    // Auto-detect suspicious functions (thunks, register saves) and export context.
+    // This makes the script reusable across different .xex files.
+    static final boolean ENABLE_AUTO_DETECT_SUSPICIOUS = true;
+    static final int SUSPICIOUS_MAX_SIZE = 32; // Functions smaller than this are suspicious
+    static final int CONTEXT_BYTES_BEFORE = 256; // Bytes of context before function
+    static final int CONTEXT_BYTES_AFTER = 256; // Bytes of context after function
     // ----------------------------------------------------------------------
 
     // PowerPC general-purpose register names (r0-r31)
@@ -103,6 +110,7 @@ public class ExportProgramDump extends GhidraScript {
         writeXrefs(outDir);
         writeCallGraph(outDir);
         writeRegisterAnalysis(outDir);
+        writeRawDisassembly(outDir);
 
         println("Done. Output in: " + outDir.getAbsolutePath());
     }
@@ -303,6 +311,144 @@ public class ExportProgramDump extends GhidraScript {
     }
 
     /**
+     * Write raw_disassembly.jsonl: raw disassembly for suspicious functions.
+     * 
+     * Auto-detects suspicious functions (small functions that only save/restore registers)
+     * and exports the surrounding context. This helps investigate functions that Ghidra
+     * has misidentified as separate functions when they're actually parts of larger functions.
+     */
+    void writeRawDisassembly(File outDir) throws Exception {
+        if (!ENABLE_AUTO_DETECT_SUSPICIOUS) return;
+        
+        try (PrintWriter out = new PrintWriter(new File(outDir, "raw_disassembly.jsonl"), "UTF-8")) {
+            FunctionIterator it = currentProgram.getFunctionManager().getFunctions(true);
+            int suspiciousCount = 0;
+            
+            try {
+                while (it.hasNext()) {
+                    monitor.checkCancelled();
+                    Function fn = it.next();
+                    
+                    // Check if this function is suspicious (small and only saves/restores registers)
+                    if (!isSuspiciousFunction(fn)) continue;
+                    
+                    // Calculate context range
+                    Address start = fn.getEntryPoint();
+                    Address end = fn.getBody().getMaxAddress();
+                    
+                    // Extend range to include context
+                    Address contextStart = start.subtract(CONTEXT_BYTES_BEFORE);
+                    Address contextEnd = end.add(CONTEXT_BYTES_AFTER);
+                    
+                    // Clamp to valid memory range
+                    if (contextStart.compareTo(currentProgram.getMinAddress()) < 0) {
+                        contextStart = currentProgram.getMinAddress();
+                    }
+                    if (contextEnd.compareTo(currentProgram.getMaxAddress()) > 0) {
+                        contextEnd = currentProgram.getMaxAddress();
+                    }
+                    
+                    writeContextRange(out, fn, contextStart, contextEnd);
+                    suspiciousCount++;
+                    
+                    if (suspiciousCount % 100 == 0) {
+                        println("... " + suspiciousCount + " suspicious functions dumped");
+                    }
+                }
+            } catch (CancelledException e) {
+                println("Raw disassembly export cancelled after " + suspiciousCount + " functions.");
+            }
+            
+            println("Wrote raw_disassembly.jsonl (" + suspiciousCount + " suspicious functions)");
+        }
+    }
+    
+    /**
+     * Check if a function is suspicious (small and only contains register saves/restores).
+     * These are likely parts of larger functions that Ghidra misidentified.
+     */
+    boolean isSuspiciousFunction(Function fn) {
+        // Skip if function is too large
+        if (fn.getBody().getNumAddresses() > SUSPICIOUS_MAX_SIZE) return false;
+        
+        // Check if function only contains register saves/restores
+        int saveCount = 0;
+        int restoreCount = 0;
+        int otherCount = 0;
+        
+        Instruction instr = getInstructionAt(fn.getEntryPoint());
+        Address end = fn.getBody().getMaxAddress();
+        while (instr != null && instr.getAddress().compareTo(end) <= 0) {
+            String mnemonic = instr.getMnemonicString();
+            if (mnemonic.startsWith("st")) {
+                saveCount++;
+            } else if (mnemonic.equals("lwz") || mnemonic.equals("ld")) {
+                restoreCount++;
+            } else if (mnemonic.equals("blr") || mnemonic.equals("bl") || mnemonic.equals("b")) {
+                // Branches are expected in thunks
+            } else {
+                otherCount++;
+            }
+            instr = instr.getNext();
+        }
+        
+        // Suspicious if mostly saves/restores with no other instructions
+        return otherCount == 0 && (saveCount > 0 || restoreCount > 0);
+    }
+    
+    /**
+     * Write a context range to the output file.
+     */
+    void writeContextRange(PrintWriter out, Function fn, Address start, Address end) {
+        out.println("{");
+        out.println("  \"function\": \"" + esc(fn.getName()) + "\",");
+        out.println("  \"functionAddress\": \"0x" + fn.getEntryPoint().toString() + "\",");
+        out.println("  \"functionSize\": " + fn.getBody().getNumAddresses() + ",");
+        out.println("  \"contextStart\": \"0x" + start.toString() + "\",");
+        out.println("  \"contextEnd\": \"0x" + end.toString() + "\",");
+        out.println("  \"instructions\": [");
+        
+        Instruction instr = getInstructionAt(start);
+        boolean first = true;
+        while (instr != null && instr.getAddress().compareTo(end) <= 0) {
+            if (!first) out.println(",");
+            first = false;
+            
+            StringBuilder ops = new StringBuilder();
+            for (int i = 0; i < instr.getNumOperands(); i++) {
+                if (i > 0) ops.append(", ");
+                ops.append(instr.getDefaultOperandRepresentation(i));
+            }
+            
+            byte[] bytes = new byte[0];
+            try {
+                bytes = instr.getBytes();
+            } catch (Exception ignored) {
+            }
+            StringBuilder hex = new StringBuilder();
+            for (byte b : bytes) hex.append(String.format("%02x", b));
+            
+            // Find which function (if any) this instruction belongs to
+            Function containingFn = currentProgram.getFunctionManager().getFunctionContaining(instr.getAddress());
+            String fnName = containingFn != null ? containingFn.getName() : "null";
+            
+            // Mark if this instruction is inside the target function
+            boolean inTarget = containingFn != null && containingFn.getEntryPoint().equals(fn.getEntryPoint());
+            
+            out.print("    {\"addr\": \"0x" + instr.getAddress() + "\", \"bytes\": \"" + hex
+                    + "\", \"mnemonic\": \"" + esc(instr.getMnemonicString()) + "\", \"operands\": \""
+                    + esc(ops.toString()) + "\", \"function\": \"" + esc(fnName) + "\", \"inTarget\": "
+                    + inTarget + "}");
+            
+            instr = instr.getNext();
+        }
+        out.println();
+        out.println("  ]");
+        out.println("}");
+        out.println();
+    }
+
+    /**
      * Write xrefs.jsonl: one JSON object per call/reference instruction.
      * Each line: {"from":"0x...","to":"0x...","type":"direct|indirect|reference","mnemonic":"bl|bctrl|...","function":"sub_..."}
      */
@@ -319,7 +465,7 @@ public class ExportProgramDump extends GhidraScript {
                     while (instr != null && instr.getAddress().compareTo(end) <= 0) {
                         // Direct call: bl to known address
                         if (instr.getMnemonicString().equals("bl") || instr.getMnemonicString().equals("b")) {
-                            Address target = instr.getOperands().length > 0 ? instr.getOperands()[0] : null;
+                            Address target = getBranchTarget(instr);
                             if (target != null) {
                                 Function callee = currentProgram.getFunctionManager().getFunctionContaining(target);
                                 out.println("{\"from\":\"0x" + instr.getAddress() + "\",\"to\":\"0x" + target
@@ -364,8 +510,8 @@ public class ExportProgramDump extends GhidraScript {
                 while (instr != null && instr.getAddress().compareTo(end) <= 0) {
                     String calleeName = null;
                     if (instr.getMnemonicString().equals("bl")) {
-                        if (instr.getOperands().length > 0) {
-                            Address target = instr.getOperands()[0];
+                        Address target = getBranchTarget(instr);
+                        if (target != null) {
                             Function callee = currentProgram.getFunctionManager().getFunctionContaining(target);
                             if (callee != null) calleeName = callee.getName();
                         }
@@ -433,9 +579,10 @@ public class ExportProgramDump extends GhidraScript {
         Address end = fn.getBody().getMaxAddress();
         while (instr != null && instr.getAddress().compareTo(end) <= 0) {
             String mnemonic = instr.getMnemonicString();
-            String[] operands = instr.getOperands().length > 0 ? new String[instr.getOperands().length] : new String[0];
-            for (int i = 0; i < instr.getOperands().length; i++) {
-                operands[i] = instr.getOperands()[i].toString();
+            int numOperands = instr.getNumOperands();
+            String[] operands = new String[numOperands];
+            for (int i = 0; i < numOperands; i++) {
+                operands[i] = instr.getDefaultOperandRepresentation(i);
             }
 
             // stw/stw/r31,-N(r1) = save register to stack
@@ -496,6 +643,27 @@ public class ExportProgramDump extends GhidraScript {
         return false;
     }
 
+    /**
+     * Get the target address of a branch instruction (bl, b).
+     * Returns null if the instruction is not a branch or the target cannot be determined.
+     */
+    Address getBranchTarget(Instruction instr) {
+        // Parse the operand string to extract the target address
+        if (instr.getNumOperands() > 0) {
+            String operand = instr.getDefaultOperandRepresentation(0);
+            if (operand != null && operand.startsWith("0x")) {
+                try {
+                    return currentProgram.getAddressFactory().getDefaultAddressSpace()
+                            .getAddress(operand.substring(2));
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+        }
+        
+        return null;
+    }
+
     String jsonArray(java.util.Set<String> set) {
         StringBuilder sb = new StringBuilder("[");
         boolean first = true;
@@ -505,11 +673,6 @@ public class ExportProgramDump extends GhidraScript {
             first = false;
         }
         sb.append("]");
-        return sb.toString();
-    }
-}
-            }
-        }
         return sb.toString();
     }
 }
