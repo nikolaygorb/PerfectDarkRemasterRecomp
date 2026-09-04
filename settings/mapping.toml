@@ -1,7 +1,7 @@
-# wetrecomp - input mapping settings
+# PerfectDarkRemasterRecomp - input mapping settings
 #
 # Loaded automatically at startup in addition to hardware.toml (see
-# OnConfigurePaths in src/wetrecomp_app.h). --flag on the command line and
+# OnConfigurePaths in src/perfectdarkremasterrecomp_app.h). --flag on the command line and
 # REX_* environment variables always override values from this file.
 #
 # Gamepad button layouts (DualShock 4 / DualSense / Xbox / Switch Pro, etc.)
