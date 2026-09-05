@@ -16,6 +16,13 @@ namespace game_patches
   // https://github.com/xenia-canary/game-patches/blob/5c3b70e92c1c050dafd9e35a6c57e1edf4fb1a47/patches/584109C2%20-%20Perfect%20Dark.patch.toml
   static void ApplyTextureNoiseFix()
   {
+#if defined(__linux__)
+    // This patch is NVIDIA-specific and causes crashes on Linux builds.
+    // The memory protection mechanism behaves differently on Linux, and
+    // the patch was designed for the Windows/Xenia environment.
+    return;
+#endif
+
     if (!REXCVAR_GET(pdr_texture_noise_fix))
     {
       return;
