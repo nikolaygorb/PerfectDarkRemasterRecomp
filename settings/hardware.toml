@@ -8,20 +8,27 @@
 # Flat key = value only
 
 gpu_plugin = "xenos"
-# Graphics API backend rexgpu-xenos loads: "any" (D3D12 first), "d3d12", or
-# "vulkan". Project-defined cvar, see OnPreSetup in src/perfectdarkremasterrecomp_app.h.
+# "any" (d3d12 - win default, vulkan - lin default)
+# "d3d12" / "vulkan"
 graphics_backend = "any"
 vsync = false
-resolution_scale = 1
+resolution_scale = 2
 async_shader_compilation = true
 native_2x_msaa = false
-anisotropic_override = 0
+anisotropic_override = 1
 
 window_width = 1920
 window_height = 1080
 fullscreen = true
 monitor = 0
 resolution = "1920x1080"
+
+texture_cache_memory_limit_soft = 1024
+texture_cache_memory_limit_hard = 4096
+clear_memory_page_state = true
+readback_memexport = true
+readback_memexport_fast = true
+host_present_from_non_ui_thread	= true
 
 render_target_path_d3d12 = "rtv"
 store_shaders = true
@@ -46,11 +53,7 @@ vulkan_allow_present_mode_immediate = true
 vulkan_allow_present_mode_fifo_relaxed = false
 vulkan_allow_present_mode_mailbox = false
 
-# Experimental: ported xenia-canary game-patches "Fix texture noise on
-# NVIDIA GPUs" patch for Perfect Dark (584109C2). Off by default (matches
-# upstream). Project-defined cvar, applied as a direct guest-memory write
-# in OnPostLoadXexImage() in src/perfectdarkremasterrecomp_app.h.
-pdr_texture_noise_fix = true
+execute_unclipped_draw_vs_on_cpu = true
 
 # XBLA license bypass. SDK cvar (rexglue-sdk/src/kernel/xam/xam_content.cpp)
 # read by XamContentGetLicenseMask_entry. Default 0 means "no licenses" so
@@ -63,9 +66,8 @@ license_mask = 4294967295
 # Suppresses the "profile not signed in" prompt at startup.
 headless = false
 
-# Remove once done - this produces a much larger log file per run.
-#log_level = "trace"
-#log_level = "error"
+# trace, debug, info, warn, error
+log_level = "critical"
 
 # texture fetch constant has invalid type
 gpu_allow_invalid_fetch_constants = true
@@ -77,3 +79,8 @@ gpu_allow_invalid_fetch_constants = true
 # Enable runtime debug tools (stub sweep, missing function scan).
 # Produces logs/missed_functions.txt and logs/stub_sweep.txt.
 dev_debug_runtime = false
+
+#### patch ####
+# Experimental: ported xenia-canary game-patches "Fix texture noise on
+# NVIDIA GPUs" patch for Perfect Dark (584109C2). Only for Windows
+pdr_texture_noise_fix = true
