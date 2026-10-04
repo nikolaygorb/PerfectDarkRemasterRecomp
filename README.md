@@ -86,6 +86,7 @@ Useful flags/env vars while developing:
 | `--game_data_root <path>` | Overrides the default `<repo_root>/assets` game-files location. |
 | `--graphics_backend d3d12\|vulkan\|any` | Forces the graphics API `rexgpu-xenos` uses. Default `"any"` picks D3D12 first. |
 | `--gpu_plugin xenos` | Overrides `settings/hardware.toml`'s `gpu_plugin`. |
+| `--pdr_gpu_wait_mode 0\|1\|2` | Render thread wait for the GPU: busy spin, yield (default), sleep. |
 | `--perf_log_csv=<path>` | Per-frame metrics CSV (only when built with `REXGLUE_ENABLE_PERF_COUNTERS`). |
 | `REX_CPU_PRESET` | CMake cache variable, not a runtime flag — see [Build](#build). |
 
@@ -112,7 +113,8 @@ Rendering/window/vsync and input-backend defaults are checked in under [`setting
 │   ├── main.cpp                # REX_DEFINE_APP entry point
 │   ├── perfectdarkremasterrecomp_app.h   # App hooks (OnPreSetup, OnPostSetup, ...)
 │   ├── game_constants.h        # Code-range constants (kCodeBase / kCodeEnd)
-│   ├── game_cvars.h            # Project-defined cvars (graphics_backend, ...)
+│   ├── game_cvars.h/.cpp       # Project-defined cvars (graphics_backend, ...)
+│   ├── render/gpu_wait_hook.cpp # GPU ring-space wait: yield/sleep instead of busy spin
 │   ├── game_patches.h          # Texture-noise fix (guest-memory write)
 │   ├── debug_tools.h           # Stub sweep + missing-function scan
 │   └── utils.h                 # Repo-root discovery + settings loading

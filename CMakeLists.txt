@@ -33,6 +33,8 @@ include(generated/rexglue.cmake)
 # Sources
 set(PERFECTDARKREMASTERRECOMP_SOURCES
     src/main.cpp
+    src/game_cvars.cpp
+    src/render/gpu_wait_hook.cpp
 )
 
 # Windows resources (icon)

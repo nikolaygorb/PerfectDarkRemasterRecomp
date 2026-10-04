@@ -69,8 +69,14 @@ headless = false
 # trace, debug, info, warn, error
 log_level = "critical"
 
-# texture fetch constant has invalid type
 gpu_allow_invalid_fetch_constants = true
+postprocess_ffx_cas_additional_sharpness = 1
+postprocess_ffx_fsr_max_upsampling_passes = 1
+use_dedicated_xma_thread = false
+xma_decoder = "new"
+mount_cache = true
+framerate_limit = 0
+readback_resolve  = "fast"
 
 # Perf CSV log path (per-frame metrics). Empty = disabled.
 # Only works when REXGLUE_ENABLE_PERF_COUNTERS is defined (non-Release).
@@ -81,6 +87,9 @@ gpu_allow_invalid_fetch_constants = true
 dev_debug_runtime = false
 
 #### patch ####
+# 0 = busy spin (original), 1 = yield the core, 2 = sleep 200us
+pdr_gpu_wait_mode = 1
+
 # Experimental: ported xenia-canary game-patches "Fix texture noise on
 # NVIDIA GPUs" patch for Perfect Dark (584109C2). Only for Windows
 pdr_texture_noise_fix = true

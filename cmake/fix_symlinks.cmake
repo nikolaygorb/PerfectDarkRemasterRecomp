@@ -49,7 +49,9 @@ foreach(file ${MSPACK_SYMLINK_FILES})
         if(file_content MATCHES "^\\.\\./\\.\\./libmspack/mspack/")
             # It's a symlink placeholder - replace with actual file
             if(EXISTS "${src_file}")
-                file(COPY "${src_file}" DESTINATION "${MSPACK_DST}/")
+                # file(COPY) skips files it thinks are already up to date (by
+                # timestamp), so use COPY_FILE which always overwrites.
+                file(COPY_FILE "${src_file}" "${dst_file}")
                 message(STATUS "Fixed symlink: ${file}")
             else()
                 message(WARNING "Cannot fix symlink ${file}: source ${src_file} not found")
