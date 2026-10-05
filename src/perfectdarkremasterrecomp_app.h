@@ -16,6 +16,8 @@
 #include "debug_tools.h"
 #include "game_cvars.h"
 #include "game_patches.h"
+#include "mod/third_person/third_person.h"
+#include "thread_sampler.h"
 #include "utils.h"
 
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
@@ -54,9 +56,17 @@ public:
     game_patches::ApplyTextureNoiseFix();
   }
 
+  void OnCreateDialogs(rex::ui::ImGuiDrawer *) override
+  {
+    // Registered before OnPostSetup reloads the settings files, so the key
+    // can be rebound from mapping.toml.
+    third_person::RegisterBinds();
+  }
+
   void OnPostSetup() override
   {
     utils::LoadSettingsFiles();
+    pdr::StartThreadSampler();
 
 #ifdef REXGLUE_ENABLE_PERF_COUNTERS
     // SDK exposes the perf_log_csv cvar but never wires it up; do it here so

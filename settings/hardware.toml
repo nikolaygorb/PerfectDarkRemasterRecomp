@@ -3,7 +3,7 @@
 # Loaded automatically at startup (see OnConfigurePaths in
 # src/perfectdarkremasterrecomp_app.h) and rewritten by the in-game Settings overlay's
 # "Save to config" button. --flag on the command line and REX_* environment
-# variables always override values from this file - see ../settings/README.md.
+# variables always override values from this file - see settings/README.md.
 #
 # Flat key = value only
 
@@ -63,15 +63,14 @@ license_mask = 4294967295
 
 # SDK cvar (rexglue-sdk/src/kernel/xam/xam_ui.cpp). When true, XamShowMessageBoxUI
 # and friends auto-pick the active button instead of showing an ImGui dialog.
-# Suppresses the "profile not signed in" prompt at startup.
+# Not for the startup "Gamer Profile not online" prompt: it would pick "Connect
+# to Xbox LIVE" and hang - see pdr_skip_live_prompt below.
 headless = false
 
 # trace, debug, info, warn, error
 log_level = "critical"
 
 gpu_allow_invalid_fetch_constants = true
-postprocess_ffx_cas_additional_sharpness = 1
-postprocess_ffx_fsr_max_upsampling_passes = 1
 use_dedicated_xma_thread = false
 xma_decoder = "new"
 mount_cache = true
@@ -93,3 +92,14 @@ pdr_gpu_wait_mode = 1
 # Experimental: ported xenia-canary game-patches "Fix texture noise on
 # NVIDIA GPUs" patch for Perfect Dark (584109C2). Only for Windows
 pdr_texture_noise_fix = true
+
+# Third-person camera (solo only), toggle in game with V (bind_third_person in mapping.toml).
+# Camera-local offset from the eye in game units (~cm): x = right, y = up, z < 0 = behind.
+pdr_tp_enable = false
+pdr_tp_offset_x = 35.0
+pdr_tp_offset_y = 15.0
+pdr_tp_offset_z = -170.0
+
+# Answer the startup "Gamer Profile not online" prompt with "Continue playing offline"
+# instead of showing it. (headless = true would pick "Connect to Xbox LIVE" and hang.)
+pdr_skip_live_prompt = true

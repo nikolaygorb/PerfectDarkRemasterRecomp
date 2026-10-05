@@ -3,30 +3,26 @@
 # SDK boilerplate lives in generated/rexglue.cmake.
 
 cmake_minimum_required(VERSION 3.25)
-project(perfectdarkremasterrecomp LANGUAGES CXX)
+project(perfectdarkremasterrecomp LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Fix git symlinks on Windows (libmspack in SDK uses symlinks)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix_symlinks.cmake)
 
 # CPU optimization presets
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_optimizations.cmake)
+#include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_optimizations.cmake)
 
 # Build ReXGlue SDK from source (git submodule)
 set(REXSDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rexglue-sdk" CACHE PATH "Path to rexglue-sdk source tree" FORCE)
 
 # Enable both graphics backends
 if(WIN32)
-    set(REXGLUE_USE_D3D12 ON CACHE BOOL "Enable D3D12 graphics backend" FORCE)
+    set(REXGLUE_USE_D3D12 ON CACHE BOOL "Enable D3D12 graphics backend")
 endif()
-set(REXGLUE_USE_VULKAN ON CACHE BOOL "Enable Vulkan graphics backend" FORCE)
-
-# Enable SSSE3 support (required by ReXGlue SDK)
-if(WIN32)
-    add_compile_options(-mssse3)
-endif()
+set(REXGLUE_USE_VULKAN ON CACHE BOOL "Enable Vulkan graphics backend")
 
 include(generated/rexglue.cmake)
 
@@ -34,7 +30,16 @@ include(generated/rexglue.cmake)
 set(PERFECTDARKREMASTERRECOMP_SOURCES
     src/main.cpp
     src/game_cvars.cpp
+    src/thread_sampler.cpp
+    src/audio/event_queue.cpp
     src/render/gpu_wait_hook.cpp
+    src/platform/live_prompt.cpp
+    src/mod/third_person/third_person.cpp
+    src/mod/third_person/body.cpp
+    src/mod/third_person/body_weapons.cpp
+    src/mod/third_person/body_reload.cpp
+    src/mod/third_person/camera.cpp
+    src/mod/third_person/hud.cpp
 )
 
 # Windows resources (icon)

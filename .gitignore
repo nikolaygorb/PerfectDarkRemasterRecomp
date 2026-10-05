@@ -9,3 +9,5 @@ tools/benchmark_*
 tools/ExportProgramDump.java
 *.log
 
+__pycache__/
+tools/re/
