@@ -47,6 +47,7 @@ removed).
 | `pdr_tp_enable` | bool | `false` | Third-person camera mod (solo only); also toggled in game with `bind_third_person`. See [`src/mod/third_person/README.md`](../src/mod/third_person/README.md). |
 | `pdr_tp_offset_x` / `_y` / `_z` | double | `35` / `15` / `-170` | Third-person camera offset from the eye, camera-local, in game units (~cm): right, up, forward (negative = behind). |
 | `pdr_skip_live_prompt` | bool | `false` | Answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it. |
+| `user_language` | int | `1` | Game language: `1` English, `2` Japanese, `3` German, `4` French, `5` Spanish, `6` Italian; anything else is English. SDK cvar, returned for `XCONFIG_USER_LANGUAGE` by `ExGetXConfigSetting` (`rexglue-sdk/src/kernel/xboxkrnl/xboxkrnl_xconfig.cpp`). The game's statically linked `XGetLanguage` (`sub_825973E0`) reads that setting rather than the `XGetLanguage` import, so no hook is needed. Restart after changing it. |
 | `dev_debug_runtime` | bool | `false` | Debug: stub sweep and missing-function scan, writing `logs/stub_sweep.txt` and `logs/missed_functions.txt` (large). |
 | `pdr_log_gpu_wait` | bool | `false` | Debug: logs how long the render thread waits for command-ring space. |
 | `pdr_sample_threads_after_s` / `_duration_s` | int | `0` / `10` | Debug: after this many seconds (`0` = off), sample the busiest threads for the given time once and log their hottest functions. |

@@ -103,3 +103,9 @@ pdr_tp_offset_z = -170.0
 # Answer the startup "Gamer Profile not online" prompt with "Continue playing offline"
 # instead of showing it. (headless = true would pick "Connect to Xbox LIVE" and hang.)
 pdr_skip_live_prompt = true
+
+# Game language (Xbox locale id). SDK cvar returned for XCONFIG_USER_LANGUAGE,
+# which the game's XGetLanguage reads at startup. Restart after changing it.
+#  1 = English   2 = Japanese   3 = German   4 = French   5 = Spanish   6 = Italian
+# Anything else falls back to English.
+user_language = 1
