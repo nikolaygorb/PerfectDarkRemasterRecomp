@@ -9,6 +9,7 @@ namespace pd::g_vars
 {
   constexpr uint32_t kAddress = 0x82648BF8;
 
+  constexpr uint32_t kLvUpdate60fReal = 76; // f32, frames (at 60 Hz) this tick, 0 = paused
   constexpr uint32_t kPlayers = 100; // struct player *players[4]
   constexpr uint32_t kCurrentPlayer = 1188;
   constexpr uint32_t kTickMode = 1228;
@@ -24,6 +25,11 @@ namespace pd::g_vars
   inline uint32_t CurrentPlayer(const uint8_t *base)
   {
     return guest::Load32(base, kAddress + kCurrentPlayer);
+  }
+
+  inline float LvUpdate60fReal(const uint8_t *base)
+  {
+    return guest::LoadFloat(base, kAddress + kLvUpdate60fReal);
   }
 
   inline uint32_t TickMode(const uint8_t *base)

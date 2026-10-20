@@ -32,6 +32,7 @@ set(PERFECTDARKREMASTERRECOMP_SOURCES
     src/thread_sampler.cpp
     src/audio/event_queue.cpp
     src/render/gpu_wait_hook.cpp
+    src/render/glare_query_wait.cpp
     src/platform/live_prompt.cpp
     src/mod/third_person/third_person.cpp
     src/mod/third_person/body.cpp
@@ -39,6 +40,8 @@ set(PERFECTDARKREMASTERRECOMP_SOURCES
     src/mod/third_person/body_reload.cpp
     src/mod/third_person/camera.cpp
     src/mod/third_person/hud.cpp
+    src/mod/mouse_look/mouse_look.cpp
+    src/mod/mouse_look/hook.cpp
 )
 
 # Windows resources (icon)

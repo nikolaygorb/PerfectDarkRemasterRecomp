@@ -53,6 +53,11 @@ length of one call:
 - **Changing `cameramode` for good breaks things.** Third-person mode turns off
   firing sounds, footsteps, the HUD. So modes are only changed around single calls
   and put back right after.
+- **Light glares live in the gun render.** 4J moved `artifacts_tick` and the glares'
+  occlusion queries into `gun_render`, after its X-ray early return, so hiding the
+  gun that way hid every glare too. The hook then does what `player_render_hud`
+  does for the game's own third-person camera: `artifacts_tick` and the late query
+  pass.
 - **Held guns are removed lazily.** Deleting the body's gun only flags it; the hand
   is empty a tick later. A new gun is only given once the hand is empty.
 - **No reload animation for player bodies.** Multiplayer bodies never had one; the

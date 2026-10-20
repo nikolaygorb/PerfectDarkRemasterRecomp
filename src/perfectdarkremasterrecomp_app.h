@@ -16,6 +16,7 @@
 #include "debug_tools.h"
 #include "game_cvars.h"
 #include "game_patches.h"
+#include "mod/mouse_look/mouse_look.h"
 #include "mod/third_person/third_person.h"
 #include "thread_sampler.h"
 #include "utils.h"
@@ -48,6 +49,23 @@ public:
                     backend);
       }
     }
+
+#ifdef _WIN32
+    // "any" takes D3D12 first on Windows.
+    const bool vulkan = backend == "vulkan" && config.graphics;
+#else
+    const bool vulkan = backend == "any" || (backend == "vulkan" && config.graphics);
+#endif
+    if (vulkan && REXCVAR_GET(pdr_vulkan_float24_depth))
+    {
+      // On Vulkan the light glares' occlusion tests against the scene's depth all fail (the
+      // glares strobe or vanish) unless float24 depth is converted in the pixel shader, and
+      // then the polygon offset has to be applied there too. On D3D12 the same settings make
+      // the gun and hands sink into the floor and hide the glares, so Vulkan only.
+      rex::cvar::SetFlagByName("depth_float24_convert_in_pixel_shader", "true");
+      rex::cvar::SetFlagByName("depth_float24_round", "true");
+      rex::cvar::SetFlagByName("depth_bias_shader_offset", "true");
+    }
   }
 
   // void OnLoadXexImage(std::string& xex_image) override {}
@@ -56,11 +74,15 @@ public:
     game_patches::ApplyTextureNoiseFix();
   }
 
-  void OnCreateDialogs(rex::ui::ImGuiDrawer *) override
+  void OnCreateDialogs(rex::ui::ImGuiDrawer *drawer) override
   {
     // Registered before OnPostSetup reloads the settings files, so the key
     // can be rebound from mapping.toml.
     third_person::RegisterBinds();
+
+    // Window exists from this point on. Native mouse look (pdr_mouse_look) only
+    // takes the mouse over while the hook in src/mod/mouse_look/hook.cpp runs.
+    mouse_look::MouseLook::Get().Attach(window(), drawer);
   }
 
   void OnPostSetup() override

@@ -15,6 +15,9 @@ REX_EXTERN(__imp__pd_player_move_camera_from_pos_rooms); // (pos, up, look, base
 REX_EXTERN(__imp__pd_player_choose_third_person_animation); // (chr, crouchpos, ...)
 REX_EXTERN(pd_player_tick_chr_body);            // ()
 
+// move: the player's movement and view
+REX_EXTERN(__imp__pd_move_process_input); // (allowc1x, allowc1y, allowc1buttons, ignorec2)
+
 // playermgr: the body's held weapon
 REX_EXTERN(pd_playermgr_delete_weapon); // (hand)
 REX_EXTERN(pd_playermgr_create_weapon); // (hand)
@@ -23,6 +26,11 @@ REX_EXTERN(pd_playermgr_create_weapon); // (hand)
 REX_EXTERN(__imp__pd_gun_render);    // (&gdl)
 REX_EXTERN(pd_gun_get_weapon_num);   // (hand) -> weapon
 REX_EXTERN(pd_gun_free_gun_mem);     // () gunmemowner = FREE
+
+// artifact / zbuf: light glares, tested with occlusion queries
+REX_EXTERN(pd_artifact_tick);                  // ()
+REX_EXTERN(pd_zbuf_save_artifact_depths_late); // (gdl, aftergun) -> gdl
+REX_EXTERN(__imp__pd_artifact_query_visible);  // (pool, query) -> 1 visible, 0 occluded, -1 pending
 
 // model
 REX_EXTERN(pd_model_get_anim_num);  // (model) -> animnum

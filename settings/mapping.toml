@@ -33,10 +33,25 @@ mnk_mode = true
 mnk_mouse = true
 mnk_sensitivity = 1.0
 
+# Native mouse look (src/mod/mouse_look/): on foot the mouse turns the camera
+# directly - 1:1, without the game's stick dead zone and response curve.
+# Elsewhere (menus, hoverbike, CamSpy) the mouse falls back to the emulated
+# right stick above (mnk_sensitivity).
+pdr_mouse_look = true
+# Camera turn per mouse count = 0.022 deg x this (same scale as Source games).
+pdr_mouse_sensitivity = 2.0
+pdr_mouse_invert_x = false
+pdr_mouse_invert_y = false
+# Scale the turn with the zoom FOV; pdr_mouse_zoom_sensitivity is an extra
+# factor on top while zoomed in.
+pdr_mouse_zoom_scaling = true
+pdr_mouse_zoom_sensitivity = 1.0
+
 # ─────────────────────────────────────────────────────────────
 # Keyboard bindings (default values)
 # ─────────────────────────────────────────────────────────────
 # Format: comma-separated list of keys, optional modifiers (Shift+, Ctrl+, Alt+)
+# Mouse buttons: LMB, RMB, MMB
 
 # Controller buttons
 keybind_a = "Semicolon,Space"          # A button
@@ -45,8 +60,8 @@ keybind_x = "L"                        # X button
 keybind_y = "P"                        # Y button
 
 # Triggers (analog)
-keybind_left_trigger = "Q,I"           # Left trigger
-keybind_right_trigger = "E,O"          # Right trigger
+keybind_left_trigger = "Q,I,RMB"       # Left trigger (aim)
+keybind_right_trigger = "E,O,LMB"      # Right trigger (fire)
 
 # Shoulder buttons
 keybind_left_shoulder = "1"            # Left shoulder (LB)

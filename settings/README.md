@@ -44,12 +44,16 @@ removed).
 | `headless` | bool | `false` | SDK cvar, read by `XamShowMessageBoxUI_entry` in `rexglue-sdk/src/kernel/xam/xam_ui.cpp`. When `true`, message-box dialogs auto-pick the active button instead of showing an ImGui dialog. Not for the startup "Gamer Profile not online" box: its active button is "Connect to Xbox LIVE", and the game then hangs waiting for LIVE - use `pdr_skip_live_prompt` for that one. |
 | `pdr_texture_noise_fix` | bool | `false` | Experimental. Ported from the community xenia-canary `game-patches` "Fix texture noise on NVIDIA GPUs" patch for Perfect Dark (title `584109C2`). The address (`0x82014B7B`) is a plain data constant with no corresponding C++ statement, so it's applied as a direct guest-memory write by `ApplyTextureNoiseFix()` in [`src/game_patches.h`](../src/game_patches.h), called from `OnPostLoadXexImage()`. Skipped on Linux. Off by default, matching upstream. |
 | `pdr_gpu_wait_mode` | int | `1` | How the render thread waits for free GPU command-ring space: `0` busy spin (original), `1` yield the core, `2` sleep 200 µs. |
+| `occlusion_query` | string | `"fast"` | SDK cvar. Light glares test their visibility with occlusion queries and read the results three frames later. `"fast"` hands them a "visible" guess, so glares show through walls; `"async"` writes only real results; `"strict"` is correct too but much slower. |
+| `pdr_glare_query_wait_ms` | int | `30` | With `occlusion_query = "async"` or `"strict"`, how long a glare waits for an occlusion result that is not ready yet instead of being hidden (`0` = don't wait). Hook in [`src/render/glare_query_wait.cpp`](../src/render/glare_query_wait.cpp). |
+| `pdr_vulkan_float24_depth` | bool | `true` | On Vulkan only, sets `depth_float24_convert_in_pixel_shader`, `depth_float24_round` and `depth_bias_shader_offset` before the GPU starts (in `OnPreSetup`, [`src/perfectdarkremasterrecomp_app.h`](../src/perfectdarkremasterrecomp_app.h)). Without them the light glares' occlusion tests against the scene's depth always fail on Vulkan (glares strobe or vanish). Not on D3D12: there they make the gun and hands sink into the floor and hide the glares. |
 | `pdr_tp_enable` | bool | `false` | Third-person camera mod (solo only); also toggled in game with `bind_third_person`. See [`src/mod/third_person/README.md`](../src/mod/third_person/README.md). |
 | `pdr_tp_offset_x` / `_y` / `_z` | double | `35` / `15` / `-170` | Third-person camera offset from the eye, camera-local, in game units (~cm): right, up, forward (negative = behind). |
 | `pdr_skip_live_prompt` | bool | `false` | Answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it. |
 | `user_language` | int | `1` | Game language: `1` English, `2` Japanese, `3` German, `4` French, `5` Spanish, `6` Italian; anything else is English. SDK cvar, returned for `XCONFIG_USER_LANGUAGE` by `ExGetXConfigSetting` (`rexglue-sdk/src/kernel/xboxkrnl/xboxkrnl_xconfig.cpp`). The game's statically linked `XGetLanguage` (`sub_825973E0`) reads that setting rather than the `XGetLanguage` import, so no hook is needed. Restart after changing it. |
 | `dev_debug_runtime` | bool | `false` | Debug: stub sweep and missing-function scan, writing `logs/stub_sweep.txt` and `logs/missed_functions.txt` (large). |
 | `pdr_log_gpu_wait` | bool | `false` | Debug: logs how long the render thread waits for command-ring space. |
+| `pdr_log_glare_queries` | bool | `false` | Debug: every 5 s logs the light glares' occlusion query results (visible / occluded / not ready / not issued) and how long [`glare_query_wait.cpp`](../src/render/glare_query_wait.cpp) waited. |
 | `pdr_sample_threads_after_s` / `_duration_s` | int | `0` / `10` | Debug: after this many seconds (`0` = off), sample the busiest threads for the given time once and log their hottest functions. |
 
 ## `mapping.toml` reference
@@ -61,8 +65,12 @@ removed).
 | `guide_button` | bool | `true` | Whether the controller Guide/PS button is routed to the guest. |
 | `mnk_mode` | bool | `true` | Enables keyboard-as-controller input, merged in alongside any physical gamepad (see below). |
 | `mnk_mouse` | bool | `true` | Routes mouse movement to the right stick when `mnk_mode` is on. Off means the right stick only comes from the `keybind_rstick_*` keys. |
-| `mnk_sensitivity` | double | `1.0` | Mouse sensitivity for the right stick, range `0.01`-`10.0`. |
-| `keybind_*` | string | | Keyboard keys for each controller button / stick direction (comma-separated alternatives, e.g. `"Z,Tab"`). |
+| `mnk_sensitivity` | double | `1.0` | Mouse sensitivity for the right stick, range `0.01`-`10.0`. With `pdr_mouse_look` on it only applies where native mouse look doesn't run (menus, hoverbike, CamSpy). |
+| `pdr_mouse_look` | bool | `true` | Native mouse look: on foot the mouse turns the camera directly, skipping the game's stick dead zone and response curve. Hook in [`src/mod/mouse_look/hook.cpp`](../src/mod/mouse_look/hook.cpp). Needs `mnk_mode` and `mnk_mouse`. |
+| `pdr_mouse_sensitivity` | double | `2.0` | Native mouse look: camera turn per mouse count = 0.022 deg x this. Range `0.01`-`100.0`. Independent of the in-game sensitivity option. |
+| `pdr_mouse_invert_x` / `pdr_mouse_invert_y` | bool | `false` | Invert native mouse look axes. The in-game Look Up/Down option doesn't apply to it. |
+| `pdr_mouse_zoom_scaling` | bool | `true` | Scale native mouse look by `tan(fov/2) / tan(60deg/2)` while zoomed, so the picture moves under the mouse at the same rate. |
+| `pdr_mouse_zoom_sensitivity` | double | `1.0` | Extra factor on native mouse look while zoomed in. || `keybind_*` | string | | Keyboard keys for each controller button / stick direction (comma-separated alternatives, e.g. `"Z,Tab"`). |
 | `bind_third_person` | string | `"V"` | Toggles the third-person camera. Registered by the app in `OnCreateDialogs()`, so it can be rebound here. |
 
 Gamepad button layout itself (DualShock 4, DualSense, Xbox, Switch Pro, ...)

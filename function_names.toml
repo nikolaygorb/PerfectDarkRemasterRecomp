@@ -1259,6 +1259,8 @@
 0x8215A388 = { name = "pd_view_draw_ir_lens", size = 0x4A8 }
 0x8215A968 = { name = "pd_view_draw_horizon_scanner", size = 0x83C }
 0x8215B1A8 = { name = "pd_view_draw_ir_binoculars", size = 0x208 }
+0x8215B3F0 = { name = "pd_artifact_clear", size = 0x38 }
+0x8215B428 = { name = "pd_artifact_tick", size = 0x24 }
 0x8215BE78 = { name = "pd_artifact_configure_for_glares", size = 0x15C }
 0x8215BFD8 = { name = "pd_artifact_unconfigure_for_glares", size = 0x34 }
 0x8215C010 = { name = "pd_artifact_render_glares_for_room", size = 0x900 }
@@ -2400,6 +2402,10 @@
 0x8224DF50 = { name = "pd_vtxstore_free", size = 0xEC }
 0x8224E848 = { name = "pd_sched_get_write_artifacts", size = 0x1C }
 0x8224E868 = { name = "pd_sched_get_front_artifacts", size = 0x3C }
+0x8224E918 = { name = "pd_sched_increment_write_artifacts", size = 0x94 }
+0x8224E9B0 = { name = "pd_zbuf_save_artifact_depths", size = 0xDC }
+0x8224EA90 = { name = "pd_zbuf_save_artifact_depths_late", size = 0x150 }
+0x8224EBE0 = { name = "pd_sched_increment_front_artifacts", size = 0x108 }
 0x8224FCE8 = { name = "pd_bg_load_file", size = 0x10 }
 0x8224FCF8 = { name = "pd_dlights_lights_set_default", size = 0x28 }
 0x8224FDB8 = { name = "pd_savebuffer_ortho_end", size = 0x1C }
@@ -2422,7 +2428,7 @@
 0x82259C80 = { name = "pd_platform_tick_signin", size = 0x9A8 }
 0x8225E3C8 = { name = "pd_joy_stop_rumble", size = 0x60 }
 0x8225E498 = { name = "pd_playermgr_reset", size = 0xDC }
-0x82267468 = { name = "pd_artifact_clamp", size = 0x70 }
+0x82267468 = { name = "pd_artifact_query_visible", size = 0x70 }
 0x8226D130 = { name = "pd_naudio_evtq_next_event", size = 0x88 }
 0x82270B40 = { name = "pd_naudio_csp_voice_handler", size = 0x94 }
 0x82295440 = { name = "pd_libc_random", size = 0x4 }

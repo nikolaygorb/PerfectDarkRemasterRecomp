@@ -9,6 +9,9 @@ namespace pd::player
   constexpr uint32_t kVisionMode = 16; // u16
   constexpr uint32_t kProp = 188;
   constexpr uint32_t kModel = 220; // model00d4: the third-person body model
+  constexpr uint32_t kTheta = 332; // f32 vv_theta, degrees 0..360, grows turning right
+  constexpr uint32_t kVerta = 348; // f32 vv_verta, degrees -90..90
+  constexpr uint32_t kMoveMode = 440; // MOVEMODE_*
   constexpr uint32_t kSpeedSideways = 368; // f32, -1..1
   constexpr uint32_t kSpeedForwards = 376; // f32, -1..1
   constexpr uint32_t kHands = 1632;        // struct hand hands[2]
@@ -27,6 +30,14 @@ namespace pd::player
   {
     kCameraModeDefault = 0,
     kCameraModeEyespy = 2,
+  };
+
+  enum MoveMode : uint32_t
+  {
+    kMoveModeWalk = 0,
+    kMoveModeBike = 3,
+    kMoveModeGrab = 4,
+    kMoveModeCutscene = 5,
   };
 
   enum VisionMode : uint16_t
