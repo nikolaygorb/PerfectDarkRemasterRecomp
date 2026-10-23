@@ -6,7 +6,7 @@ this README.
 
 | File | Covers |
 |---|---|
-| [`hardware.toml`](hardware.toml) | Renderer/backend, window, vsync, resolution, debug output, gameplay patches and the third-person mod |
+| [`hardware.toml`](hardware.toml) | Renderer/backend, window, vsync, resolution, debug output, gameplay patches, the third-person mod and split-screen (local players) |
 | [`mapping.toml`](mapping.toml) | Input backend selection (gamepad/keyboard+mouse), key bindings, mod hotkeys |
 | [`gamecontrollerdb.txt`](gamecontrollerdb.txt) | SDL gamepad mappings for controllers it doesn't already recognize - not hand-authored, see below |
 
@@ -28,7 +28,7 @@ removed).
 | Key | Type | Default | Effect |
 |---|---|---|---|
 | `gpu_plugin` | string | `"xenos"` | GPU emulation plugin to load. Set here rather than on the command line now - see root [README](../README.md#run). A `--gpu_plugin` flag would still override this file if you ever needed a different plugin. |
-| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, or `"vulkan"`. Project-defined cvar (not from the SDK), wired up in `OnPreSetup()` in [`src/perfectdarkremasterrecomp_app.h`](../src/perfectdarkremasterrecomp_app.h) - it loads the plugin itself with the requested backend before the SDK's own auto-load (which only ever requests `"any"`) runs. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
+| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, or `"vulkan"`. Project-defined cvar (not from the SDK), wired up in [`src/render/graphics_backend.cpp`](../src/render/graphics_backend.cpp) (called from `OnPreSetup`) - it loads the plugin itself, with the requested backend or `"any"`, so the SDK's own auto-load is skipped and the plugin's cvars are registered before `pdr_vulkan_float24_depth` is applied. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
 | `vsync` | bool | `true` | Vertical sync. |
 | `resolution_scale` | int | `1` | Internal render-target supersampling, independent of window/guest resolution. |
 | `async_shader_compilation` | bool | `true` | Compile shaders on a background thread instead of blocking the render thread - reduces hitches when new shaders are first seen. |
@@ -46,15 +46,31 @@ removed).
 | `pdr_gpu_wait_mode` | int | `1` | How the render thread waits for free GPU command-ring space: `0` busy spin (original), `1` yield the core, `2` sleep 200 µs. |
 | `occlusion_query` | string | `"fast"` | SDK cvar. Light glares test their visibility with occlusion queries and read the results three frames later. `"fast"` hands them a "visible" guess, so glares show through walls; `"async"` writes only real results; `"strict"` is correct too but much slower. |
 | `pdr_glare_query_wait_ms` | int | `30` | With `occlusion_query = "async"` or `"strict"`, how long a glare waits for an occlusion result that is not ready yet instead of being hidden (`0` = don't wait). Hook in [`src/render/glare_query_wait.cpp`](../src/render/glare_query_wait.cpp). |
-| `pdr_vulkan_float24_depth` | bool | `true` | On Vulkan only, sets `depth_float24_convert_in_pixel_shader`, `depth_float24_round` and `depth_bias_shader_offset` before the GPU starts (in `OnPreSetup`, [`src/perfectdarkremasterrecomp_app.h`](../src/perfectdarkremasterrecomp_app.h)). Without them the light glares' occlusion tests against the scene's depth always fail on Vulkan (glares strobe or vanish). Not on D3D12: there they make the gun and hands sink into the floor and hide the glares. |
+| `pdr_vulkan_float24_depth` | bool | `true` | On Vulkan only, makes `true` the default of `depth_float24_convert_in_pixel_shader`, `depth_float24_round` and `depth_bias_shader_offset` before the GPU starts ([`src/render/graphics_backend.cpp`](../src/render/graphics_backend.cpp)). Without them the light glares' occlusion tests against the scene's depth always fail on Vulkan (glares strobe or vanish). Not on D3D12: there they make the gun and hands sink into the floor and hide the glares. Only the defaults change: a line for one of them in `hardware.toml` or a `--flag` wins on both backends, so leave them out of the file; "Save to config" doesn't write the Vulkan values. Works with `graphics_backend = "any"` too (Vulkan on Linux). |
 | `pdr_tp_enable` | bool | `false` | Third-person camera mod (solo only); also toggled in game with `bind_third_person`. See [`src/mod/third_person/README.md`](../src/mod/third_person/README.md). |
 | `pdr_tp_offset_x` / `_y` / `_z` | double | `35` / `15` / `-170` | Third-person camera offset from the eye, camera-local, in game units (~cm): right, up, forward (negative = behind). |
 | `pdr_skip_live_prompt` | bool | `false` | Answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it. |
 | `user_language` | int | `1` | Game language: `1` English, `2` Japanese, `3` German, `4` French, `5` Spanish, `6` Italian; anything else is English. SDK cvar, returned for `XCONFIG_USER_LANGUAGE` by `ExGetXConfigSetting` (`rexglue-sdk/src/kernel/xboxkrnl/xboxkrnl_xconfig.cpp`). The game's statically linked `XGetLanguage` (`sub_825973E0`) reads that setting rather than the `XGetLanguage` import, so no hook is needed. Restart after changing it. |
+| `max_local_users` | int | `1` (`2` in the checked-in file) | Split-screen: how many local players can be signed in, `1` to `4`. Player 1 is always signed in; players 2 and up sign in while a controller is assigned to them (connecting a gamepad signs the player in, disconnecting signs them out). The checked-in file sets `2`. SDK cvar, see [Split-screen](#split-screen) and [`split-screen.md`](split-screen.md). |
+| `keyboard_own_player` | bool | `false` (commented out in the checked-in file) | Split-screen: keyboard and mouse are player 1 on their own and gamepads start at player 2, so two people can play with one gamepad. Only in automatic device assignment. SDK cvar. |
+| `user_gamertag_2` | string | `""` | Split-screen: name the game shows for player 2 (max 15 bytes). Empty = `User(2)`. Not in the checked-in file; add it to use it. |
+| `input_player1` / `input_player2` | string | `"auto"` | Split-screen: explicit device lists for players 1 and 2 (`keyboard`, `pad1`-`pad4`, `pads`, `none`, `auto`). Not in the checked-in file; add them to use them. See [`split-screen.md`](split-screen.md#choosing-devices-input_player1-input_player2). |
 | `dev_debug_runtime` | bool | `false` | Debug: stub sweep and missing-function scan, writing `logs/stub_sweep.txt` and `logs/missed_functions.txt` (large). |
 | `pdr_log_gpu_wait` | bool | `false` | Debug: logs how long the render thread waits for command-ring space. |
-| `pdr_log_glare_queries` | bool | `false` | Debug: every 5 s logs the light glares' occlusion query results (visible / occluded / not ready / not issued) and how long [`glare_query_wait.cpp`](../src/render/glare_query_wait.cpp) waited. |
 | `pdr_sample_threads_after_s` / `_duration_s` | int | `0` / `10` | Debug: after this many seconds (`0` = off), sample the busiest threads for the given time once and log their hottest functions. |
+
+## Split-screen
+
+The runtime can sign in up to four local players, as a console does when a second person picks up a controller. `hardware.toml` ships with `max_local_users = 2`, so two local players work out of the box:
+
+- **Player 1:** keyboard and mouse plus gamepad 1.
+- **Player 2:** gamepad 2, signed in as soon as it is connected (and signed out when it is unplugged).
+- **Per-player profile:** each player keeps their own in-game options (look inversion, sensitivity, button layout) under `profile/User/`, `profile/User2/`, and so on; save games are shared (kept under player 1).
+- **Two people, one gamepad:** uncomment `keyboard_own_player = true` - keyboard and mouse become player 1, the gamepad becomes player 2.
+- **Three or four players:** set `max_local_users = 3` or `4`; players 3 and 4 get gamepads 3 and 4 (automatic mode only).
+- **Custom assignment:** `input_player1` / `input_player2` choose the devices of players 1 and 2 explicitly.
+
+The runtime only tells the game who is signed in and which controller belongs to whom; the game decides how split-screen looks and when it accepts new players. Many games only look for new players on the menu or join screen, so connect the second gamepad there or before starting. Per-player gamepad button remapping is not available. Full details, ten ready-made examples and troubleshooting: [`split-screen.md`](split-screen.md).
 
 ## `mapping.toml` reference
 

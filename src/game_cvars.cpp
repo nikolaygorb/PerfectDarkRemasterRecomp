@@ -15,10 +15,6 @@ REXCVAR_DEFINE_BOOL(pdr_log_gpu_wait, false, "Debug",
                     "Debug: log how long the render thread waits for command ring space")
     .lifecycle(rex::cvar::Lifecycle::kHotReload);
 
-REXCVAR_DEFINE_BOOL(pdr_log_glare_queries, false, "Debug",
-                    "Debug: log the light glares' occlusion query results and waits")
-    .lifecycle(rex::cvar::Lifecycle::kHotReload);
-
 REXCVAR_DEFINE_INT32(pdr_sample_threads_after_s, 0, "Debug",
                      "Debug: after this many seconds, sample the busiest threads once and log "
                      "their hottest functions, 0 = off")

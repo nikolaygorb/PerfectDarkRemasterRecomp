@@ -137,12 +137,7 @@ REX_HOOK_RAW(pd_artifact_query_visible)
   const uint32_t lr = static_cast<uint32_t>(ctx.lr);
   __imp__pd_artifact_query_visible(ctx, base);
   const bool wait = ctx.r3.s32 == kNotReady && REXCVAR_GET(pdr_glare_query_wait_ms) > 0;
-  const bool log = REXCVAR_GET(pdr_log_glare_queries);
-  if (!wait && !log)
-    return;
 
   const auto start = std::chrono::steady_clock::now();
   const bool timed_out = wait && WaitForResult(ctx, base, pool, query);
-  if (log)
-    g_stats.Observe(lr, ctx.r3.s32, wait, timed_out, std::chrono::steady_clock::now() - start);
 }

@@ -11,13 +11,13 @@
 #include <rex/memory/utils.h>
 #include <rex/rex_app.h>
 #include <rex/runtime.h>
-#include <rex/system/gpu_plugin.h>
 
 #include "debug_tools.h"
 #include "game_cvars.h"
 #include "game_patches.h"
 #include "mod/mouse_look/mouse_look.h"
 #include "mod/third_person/third_person.h"
+#include "render/graphics_backend.h"
 #include "thread_sampler.h"
 #include "utils.h"
 
@@ -39,33 +39,7 @@ public:
 
   void OnPreSetup(rex::RuntimeConfig &config) override
   {
-    std::string backend = REXCVAR_GET(graphics_backend);
-    if (backend != "any" && !config.gpu_plugin.empty())
-    {
-      config.graphics = rex::system::LoadGpuPlugin(config.gpu_plugin, backend);
-      if (!config.graphics)
-      {
-        REXLOG_WARN("graphics_backend '{}' unavailable, falling back to automatic selection",
-                    backend);
-      }
-    }
-
-#ifdef _WIN32
-    // "any" takes D3D12 first on Windows.
-    const bool vulkan = backend == "vulkan" && config.graphics;
-#else
-    const bool vulkan = backend == "any" || (backend == "vulkan" && config.graphics);
-#endif
-    if (vulkan && REXCVAR_GET(pdr_vulkan_float24_depth))
-    {
-      // On Vulkan the light glares' occlusion tests against the scene's depth all fail (the
-      // glares strobe or vanish) unless float24 depth is converted in the pixel shader, and
-      // then the polygon offset has to be applied there too. On D3D12 the same settings make
-      // the gun and hands sink into the floor and hide the glares, so Vulkan only.
-      rex::cvar::SetFlagByName("depth_float24_convert_in_pixel_shader", "true");
-      rex::cvar::SetFlagByName("depth_float24_round", "true");
-      rex::cvar::SetFlagByName("depth_bias_shader_offset", "true");
-    }
+    pdr::LoadGpuPlugin(config);
   }
 
   // void OnLoadXexImage(std::string& xex_image) override {}

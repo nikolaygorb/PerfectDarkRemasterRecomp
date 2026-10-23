@@ -33,6 +33,7 @@ set(PERFECTDARKREMASTERRECOMP_SOURCES
     src/audio/event_queue.cpp
     src/render/gpu_wait_hook.cpp
     src/render/glare_query_wait.cpp
+    src/render/graphics_backend.cpp
     src/platform/live_prompt.cpp
     src/mod/third_person/third_person.cpp
     src/mod/third_person/body.cpp

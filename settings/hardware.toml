@@ -11,7 +11,7 @@ gpu_plugin = "xenos"
 # "any" (d3d12 - win default, vulkan - lin default)
 # "d3d12" / "vulkan"
 graphics_backend = "any"
-vsync = false
+vsync = true
 resolution_scale = 1
 present_effect = "fsr"
 present_fsr_sharpness_reduction = 0.3
@@ -38,14 +38,15 @@ texture_cache_memory_limit_hard = 4096
 clear_memory_page_state = true
 readback_memexport = true
 readback_memexport_fast = true
+readback_resolve  = "fast"
 host_present_from_non_ui_thread	= true
 execute_unclipped_draw_vs_on_cpu = true
-
+gpu_allow_invalid_fetch_constants = true
 render_target_path_d3d12 = "rtv"
+render_target_path_vulkan = "fbo"
 store_shaders = true
 present_letterbox = true
 occlusion_query = "async"
-
 
 d3d12_adapter = -1
 d3d12_allow_variable_refresh_rate_and_tearing = true
@@ -60,7 +61,6 @@ d3d12_queue_priority = 1
 d3d12_submit_on_primary_buffer_end = true
 d3d12_tessellation_wireframe = false
 
-render_target_path_vulkan = "fbo"
 vulkan_log_debug_messages = false
 vulkan_allow_present_mode_immediate = true
 vulkan_allow_present_mode_fifo_relaxed = false
@@ -80,13 +80,6 @@ headless = false
 
 # trace, debug, info, warn, error, critical
 log_level = "error"
-
-gpu_allow_invalid_fetch_constants = true
-use_dedicated_xma_thread = false
-xma_decoder = "new"
-mount_cache = true
-framerate_limit = 0
-readback_resolve  = "fast"
 
 # Perf CSV log path (per-frame metrics). Empty = disabled.
 # Only works when REXGLUE_ENABLE_PERF_COUNTERS is defined (non-Release).
@@ -121,4 +114,6 @@ pdr_skip_live_prompt = true
 # Anything else falls back to English.
 user_language = 1
 
-pdr_log_glare_queries = true
+# Split-screen: local players and their controllers (see split-screen.md).
+max_local_users = 2
+#keyboard_own_player = true

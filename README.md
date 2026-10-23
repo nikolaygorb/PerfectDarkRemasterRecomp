@@ -26,6 +26,7 @@ Static recompilation translates the Xbox 360 PowerPC code inside the game's `def
 - **No hang on mission restart** — the N64 audio library's event queue can run empty, and its voice handlers then spin forever holding the sound lock (black screen); an empty queue now yields a short delay instead ([`src/audio/event_queue.cpp`](src/audio/event_queue.cpp)).
 - **Optional Xbox LIVE prompt skip** — `pdr_skip_live_prompt = true` answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it (`headless` would pick "Connect to Xbox LIVE" and hang).
 - **Language selection** — set `user_language` in [`settings/hardware.toml`](settings/hardware.toml) (`1` English, `2` Japanese, `3` German, `4` French, `5` Spanish, `6` Italian) and restart.
+- **Split-screen (local players)** — up to four local players can be signed in, with a controller assigned to each. `max_local_users = 2` in [`settings/hardware.toml`](settings/hardware.toml) is on by default: keyboard/mouse + pad 1 is player 1, pad 2 is player 2 (signs in when the pad connects). `keyboard_own_player = true` lets two people share one gamepad, `input_player1` / `input_player2` pick devices explicitly, and each player keeps their own profile options. Details and examples: [`settings/split-screen.md`](settings/split-screen.md).
 - **Dual graphics backend** — pick Direct3D 12 or Vulkan at runtime via `--graphics_backend` or `settings/hardware.toml`.
 - **Build optimizations** — Release builds use `-O3` with ThinLTO (and `-march=x86-64-v2` on x86-64), RelWithDebInfo `-O2 -g`; see [`cmake/build_optimizations.cmake`](cmake/build_optimizations.cmake).
 - **Texture noise fix** — ported from the community xenia-canary `game-patches` for Perfect Dark (`584109C2`), applied as a direct guest-memory write in [`src/game_patches.h`](src/game_patches.h). Enabled by default in [`settings/hardware.toml`](settings/hardware.toml).
@@ -101,7 +102,7 @@ Logs are written to `out\build\<preset>\logs\*.log` (the exe is built `WIN32`, s
 
 ## Configuration
 
-Rendering/window/vsync and input-backend defaults are checked in under [`settings/`](settings/README.md) (`hardware.toml` / `mapping.toml`), loaded automatically at startup. CLI flags and `REX_*` environment variables always override them — see [`settings/README.md`](settings/README.md) for the full reference and precedence rules.
+Rendering/window/vsync, split-screen (local players) and input-backend defaults are checked in under [`settings/`](settings/README.md) (`hardware.toml` / `mapping.toml`), loaded automatically at startup. CLI flags and `REX_*` environment variables always override them — see [`settings/README.md`](settings/README.md) for the full reference and precedence rules.
 
 ## Project structure
 
@@ -128,6 +129,7 @@ Rendering/window/vsync and input-backend defaults are checked in under [`setting
 │   ├── mod/third_person/       # Third-person camera mod, one file per job
 │   ├── platform/live_prompt.cpp # Optional Xbox LIVE prompt skip (continue offline)
 │   ├── render/gpu_wait_hook.cpp # GPU ring-space wait: yield/sleep instead of busy spin
+│   ├── render/graphics_backend.h/.cpp # GPU plugin load for graphics_backend + Vulkan-only depth defaults
 │   ├── game_patches.h          # Texture-noise fix (guest-memory write)
 │   ├── debug_tools.h           # Stub sweep + missing-function scan
 │   ├── thread_sampler.h/.cpp   # One-shot sampler of the busiest threads (debug)
@@ -159,7 +161,7 @@ Rendering/window/vsync and input-backend defaults are checked in under [`setting
 
 ## Known issues and difficulties encountered
 
-- **Multiplayer / Co-op** is not implemented.
+- **Online multiplayer** is not implemented (XUIDs and names are local placeholders). Local split-screen is handled by the runtime's local-player sign-in and controller assignment, see [`settings/split-screen.md`](settings/split-screen.md); how it plays in the game itself is not fully verified yet.
 - **The `rexglue` CLI must be invoked through the SDK source tree.** Because the SDK is built from source, the `rexglue` binary is produced by the same build as the game; running codegen manually requires the SDK to have been built first.
 
 ## Credits

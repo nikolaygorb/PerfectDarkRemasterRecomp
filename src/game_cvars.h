@@ -9,7 +9,6 @@
 REXCVAR_DECLARE(std::string, graphics_backend);
 REXCVAR_DECLARE(bool, pdr_texture_noise_fix);
 REXCVAR_DECLARE(bool, pdr_log_gpu_wait);
-REXCVAR_DECLARE(bool, pdr_log_glare_queries);
 REXCVAR_DECLARE(int32_t, pdr_sample_threads_after_s);
 REXCVAR_DECLARE(int32_t, pdr_sample_threads_duration_s);
 REXCVAR_DECLARE(int32_t, pdr_gpu_wait_mode);
