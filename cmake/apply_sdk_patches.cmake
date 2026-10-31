@@ -5,7 +5,8 @@
 # reverses cleanly is skipped, so re-configuring is harmless. Each *.patch has
 # a *.md next to it explaining why it exists and when it can be dropped.
 
-# The patches only change behavior on macOS (MoltenVK).
+# Applied on macOS only: the patches were made and tested there (each *.md says
+# whether the problem also exists on other platforms).
 if(NOT APPLE)
     return()
 endif()

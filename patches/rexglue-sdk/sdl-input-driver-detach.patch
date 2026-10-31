@@ -1,0 +1,132 @@
+diff --git a/include/rex/input/sdl/sdl_input_driver.h b/include/rex/input/sdl/sdl_input_driver.h
+index be1f9b8..d4022f4 100644
+--- a/include/rex/input/sdl/sdl_input_driver.h
++++ b/include/rex/input/sdl/sdl_input_driver.h
+@@ -71,9 +71,17 @@ class SDLInputDriver final : public InputDriver, public rex::ui::WindowListener
+ 
+   // WindowListener
+   void OnClosing(rex::ui::UIEvent& e) override;
++  void OnDestroying(rex::ui::UIEvent& e) override;
+   void OnLostFocus(rex::ui::UISetupEvent& e) override;
+   void OnGotFocus(rex::ui::UISetupEvent& e) override;
+ 
++  // Stops listening to the window and to SDL events and shuts the SDL
++  // subsystems down. Called when the window closes, when it is destroyed
++  // without being closed (the title quit by itself), and when the driver is
++  // destroyed while the window is still open; a no-op once detached.
++  void DetachFromWindow();
++
++  static bool EventWatch(void* userdata, SDL_Event* event);
+   void HandleEvent(const SDL_Event& event);
+   std::unique_lock<std::mutex> DrainAndLock();
+   void ProcessEventLocked(const SDL_Event& event);
+diff --git a/src/input/sdl/sdl_input_driver.cpp b/src/input/sdl/sdl_input_driver.cpp
+index 57f65c4..cbd2604 100644
+--- a/src/input/sdl/sdl_input_driver.cpp
++++ b/src/input/sdl/sdl_input_driver.cpp
+@@ -164,7 +164,11 @@ SDLInputDriver::SDLInputDriver(rex::ui::Window* window, size_t window_z_order)
+       controllers_(),
+       controllers_mutex_() {}
+ 
+-SDLInputDriver::~SDLInputDriver() {}
++SDLInputDriver::~SDLInputDriver() {
++  // InputSystem::Shutdown destroys the drivers before the window when the
++  // title quits by itself; the window must not keep a listener pointing here.
++  DetachFromWindow();
++}
+ 
+ X_STATUS SDLInputDriver::Setup() {
+   if (!TestSDLVersion()) {
+@@ -189,27 +193,7 @@ void SDLInputDriver::OnWindowAvailable(rex::ui::Window* window) {
+ 
+       // With an event watch we will always get notified, even if the event queue
+       // is full, which can happen if another subsystem does not clear its events.
+-      SDL_AddEventWatch(
+-          [](void* userdata, SDL_Event* event) -> bool {
+-            if (!userdata || !event) {
+-              assert_always();
+-              return false;
+-            }
+-
+-            const auto type = event->type;
+-            if (type < SDL_EVENT_JOYSTICK_AXIS_MOTION || type >= SDL_EVENT_FINGER_DOWN) {
+-              return false;
+-            }
+-
+-            // If another part of rex uses another SDL subsystem that generates
+-            // events, this may seem like a bad idea. They will however not
+-            // subscribe to controller events so we get away with that.
+-            const auto driver = static_cast<SDLInputDriver*>(userdata);
+-            driver->HandleEvent(*event);
+-
+-            return false;
+-          },
+-          this);
++      SDL_AddEventWatch(EventWatch, this);
+ 
+       // Initialize game controller subsystem
+       if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
+@@ -240,12 +224,50 @@ void SDLInputDriver::OnWindowAvailable(rex::ui::Window* window) {
+   }
+ }
+ 
++bool SDLInputDriver::EventWatch(void* userdata, SDL_Event* event) {
++  if (!userdata || !event) {
++    assert_always();
++    return false;
++  }
++
++  const auto type = event->type;
++  if (type < SDL_EVENT_JOYSTICK_AXIS_MOTION || type >= SDL_EVENT_FINGER_DOWN) {
++    return false;
++  }
++
++  // If another part of rex uses another SDL subsystem that generates
++  // events, this may seem like a bad idea. They will however not
++  // subscribe to controller events so we get away with that.
++  const auto driver = static_cast<SDLInputDriver*>(userdata);
++  driver->HandleEvent(*event);
++
++  return false;
++}
++
+ void SDLInputDriver::OnClosing(rex::ui::UIEvent&) {
+-  if (attached_window_) {
+-    attached_window_->RemoveListener(this);
++  DetachFromWindow();
++}
++
++void SDLInputDriver::OnDestroying(rex::ui::UIEvent&) {
++  // A window destroyed without being closed first (the title quit by itself)
++  // sends no OnClosing.
++  DetachFromWindow();
++}
++
++void SDLInputDriver::DetachFromWindow() {
++  rex::ui::Window* window = attached_window_;
++  if (!window) {
++    return;
++  }
++  window->app_context().CallInUIThreadSynchronous([this, window]() {
++    window->RemoveListener(this);
++    if (sdl_events_initialized_) {
++      // Waits for a callback in progress on another thread, so none can reach
++      // this driver afterwards.
++      SDL_RemoveEventWatch(EventWatch, this);
++    }
+     if (sdl_pumpevents_queued_) {
+-      attached_window_->app_context().CallInUIThreadSynchronous(
+-          [this]() { attached_window_->app_context().ExecutePendingFunctionsFromUIThread(); });
++      window->app_context().ExecutePendingFunctionsFromUIThread();
+     }
+     for (auto& controller : controllers_) {
+       SDL_CloseGamepad(controller.sdl);
+@@ -260,7 +282,7 @@ void SDLInputDriver::OnClosing(rex::ui::UIEvent&) {
+       sdl_events_initialized_ = false;
+     }
+     attached_window_ = nullptr;
+-  }
++  });
+ }
+ 
+ void SDLInputDriver::OnLostFocus(rex::ui::UISetupEvent&) {}

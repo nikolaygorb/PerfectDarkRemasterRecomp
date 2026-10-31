@@ -63,6 +63,9 @@ namespace mouse_look
     void OnLostFocus(rex::ui::UISetupEvent &) override;
     void OnGotFocus(rex::ui::UISetupEvent &) override;
     void OnClosing(rex::ui::UIEvent &) override;
+    // The window is destroyed without closing when the title quits by itself
+    // (in-game exit): let go of it the same way.
+    void OnDestroying(rex::ui::UIEvent &e) override { OnClosing(e); }
 
   private:
     MouseLook() = default;
