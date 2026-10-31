@@ -21,6 +21,10 @@ namespace game_patches
     // The memory protection mechanism behaves differently on Linux, and
     // the patch was designed for the Windows/Xenia environment. Macs have
     // no NVIDIA GPU, so the patch is not needed there.
+    // TODO(Linux): likely cause of the crash: Protect() below passes an
+    // unaligned address, which POSIX mprotect refuses (VirtualProtect rounds
+    // it down), so the write hits a read-only page. Align to
+    // rex::memory::page_size() and test on Linux before enabling it there.
     return;
 #endif
 

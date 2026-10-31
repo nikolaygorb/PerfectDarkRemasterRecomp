@@ -123,6 +123,7 @@ Notes:
 - The output is a plain executable, not an `.app` bundle. Start it from Terminal.
 - `graphics_backend = "any"` selects Vulkan (MoltenVK); D3D12 is not available.
 - Apple GPUs have no geometry shaders, so the SDK uses its fallback primitive paths (`vulkan_require_geometry_shader` defaults to `false` on macOS).
+- On macOS, CMake applies the project's SDK patches from [`patches/rexglue-sdk/`](patches/rexglue-sdk) to the submodule at configure time. [`moltenvk-no-contraction.patch`](patches/rexglue-sdk/moltenvk-no-contraction.md) removes dark lines along the triangle edges of textured models (characters, the boot logos): see its `.md` for the cause and evidence. Because of this, `git status` shows the submodule as modified after a macOS configure.
 - Apple Silicon uses 16 KB memory pages. On hosts with pages larger than 4 KB, `gpu_allow_invalid_upload_range` defaults to `true` (see [`src/render/graphics_backend.cpp`](src/render/graphics_backend.cpp)); without it, some index-buffer uploads fail and draws are skipped.
 - The texture-noise fix is NVIDIA-specific and is skipped on macOS, as on Linux.
 - The thread sampler and `tools/thread_cpu.ps1` are Windows-only.
@@ -138,6 +139,7 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 .
 ├── assets/                     # Game data (default.xex + files) — gitignored
 ├── cmake/
+│   ├── apply_sdk_patches.cmake # Applies patches/rexglue-sdk/*.patch to the SDK (macOS)
 │   ├── build_optimizations.cmake # Compiler flags per build type (O3 + ThinLTO for Release)
 │   └── fix_symlinks.cmake      # Fixes git symlinks on Windows (libmspack in SDK)
 ├── generated/                  # Codegen output (gitignored) + rexglue.cmake
@@ -162,6 +164,7 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 │   ├── debug_tools.h           # Stub sweep + missing-function scan
 │   ├── thread_sampler.h/.cpp   # One-shot sampler of the busiest threads (debug)
 │   └── utils.h                 # Repo-root discovery + settings loading
+├── patches/rexglue-sdk/        # SDK patches, each with a .md that explains it
 ├── thirdparty/rexglue-sdk/     # ReXGlue SDK (git submodule)
 ├── tools/
 │   ├── benchmark.ps1           # D3D12 vs Vulkan benchmark runner
