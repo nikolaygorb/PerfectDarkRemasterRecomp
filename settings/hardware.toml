@@ -8,7 +8,7 @@
 # Flat key = value only
 
 gpu_plugin = "xenos"
-# "any" (d3d12 - win default, vulkan - lin default)
+# "any" (d3d12 - win default, vulkan - lin/mac default; MoltenVK on macOS)
 # "d3d12" / "vulkan"
 graphics_backend = "any"
 vsync = true

@@ -29,7 +29,11 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Default build dir if not specified
 if [[ -z "$BuildDir" ]]; then
-    BuildDir="$PROJECT_ROOT/out/build/linux-amd64-relwithdebinfo"
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        BuildDir="$PROJECT_ROOT/out/build/mac-arm64-relwithdebinfo"
+    else
+        BuildDir="$PROJECT_ROOT/out/build/linux-amd64-relwithdebinfo"
+    fi
 fi
 
 # Detect executable (Linux/macOS: .bin, Windows: .exe)

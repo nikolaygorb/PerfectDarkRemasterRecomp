@@ -4,7 +4,7 @@
   <img src="assets/icon.png" alt="Perfect Dark Remaster Recomp" width="480">
 </div>
 
-A static recompilation of **Perfect Dark Remaster** (2010, Xbox 360, Title ID `584109C2`) to native Windows x86-64, built on the [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk).
+A static recompilation of **Perfect Dark Remaster** (2010, Xbox 360, Title ID `584109C2`) to native code (Windows x86-64, Linux, macOS Apple Silicon), built on the [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk).
 
 Static recompilation translates the Xbox 360 PowerPC code inside the game's `default.xex` into native C++ that compiles and runs on a PC. There is no emulator and no interpreter in the loop; file I/O, GPU commands, audio and threading go through the ReXGlue runtime.
 
@@ -22,6 +22,7 @@ Static recompilation translates the Xbox 360 PowerPC code inside the game's `def
 ## Features
 
 - **Native Windows build** — no emulator, no interpreter; the game's own PowerPC code is compiled to x86-64.
+- **macOS (Apple Silicon) build** — the same code compiled to ARM64, rendered with Vulkan through MoltenVK (Metal). See [macOS (Apple Silicon)](#macos-apple-silicon).
 - **Third-person camera mod** — camera behind Joanna, her animated body with the gun she holds, reload animation, wall collision; toggle with `V`. Solo play. How it was made: [`src/mod/third_person/README.md`](src/mod/third_person/README.md).
 - **No hang on mission restart** — the N64 audio library's event queue can run empty, and its voice handlers then spin forever holding the sound lock (black screen); an empty queue now yields a short delay instead ([`src/audio/event_queue.cpp`](src/audio/event_queue.cpp)).
 - **Optional Xbox LIVE prompt skip** — `pdr_skip_live_prompt = true` answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it (`headless` would pick "Connect to Xbox LIVE" and hang).
@@ -100,6 +101,33 @@ Useful flags/env vars while developing:
 
 Logs are written to `out\build\<preset>\logs\*.log` (the exe is built `WIN32`, so nothing prints to the console).
 
+## macOS (Apple Silicon)
+
+Requirements: macOS 13.3 or later on an M-series Mac, Xcode 16 or later (Apple Clang), and `brew install cmake ninja`. No Vulkan SDK is needed: the ReXGlue SDK builds the Vulkan loader and MoltenVK from its submodules and copies them into `vulkan/` next to the executable.
+
+```sh
+git submodule update --init --recursive
+cmake --preset mac-arm64-relwithdebinfo
+cmake --build out/build/mac-arm64-relwithdebinfo
+```
+
+On a fresh tree, codegen runs during the first build, so CMake does not yet know the generated sources and the link fails with undefined `pd_*` / `PPCImageConfig` symbols. Configure and build once more and it links.
+
+```sh
+cd out/build/mac-arm64-relwithdebinfo
+./perfectdarkremasterrecomp --fullscreen=false
+```
+
+Notes:
+
+- The output is a plain executable, not an `.app` bundle. Start it from Terminal.
+- `graphics_backend = "any"` selects Vulkan (MoltenVK); D3D12 is not available.
+- Apple GPUs have no geometry shaders, so the SDK uses its fallback primitive paths (`vulkan_require_geometry_shader` defaults to `false` on macOS).
+- Apple Silicon uses 16 KB memory pages. On hosts with pages larger than 4 KB, `gpu_allow_invalid_upload_range` defaults to `true` (see [`src/render/graphics_backend.cpp`](src/render/graphics_backend.cpp)); without it, some index-buffer uploads fail and draws are skipped.
+- The texture-noise fix is NVIDIA-specific and is skipped on macOS, as on Linux.
+- The thread sampler and `tools/thread_cpu.ps1` are Windows-only.
+- Logs are written to `out/build/<preset>/logs/*.log`; MoltenVK also prints to the terminal.
+
 ## Configuration
 
 Rendering/window/vsync, split-screen (local players) and input-backend defaults are checked in under [`settings/`](settings/README.md) (`hardware.toml` / `mapping.toml`), loaded automatically at startup. CLI flags and `REX_*` environment variables always override them — see [`settings/README.md`](settings/README.md) for the full reference and precedence rules.
@@ -129,7 +157,7 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 │   ├── mod/third_person/       # Third-person camera mod, one file per job
 │   ├── platform/live_prompt.cpp # Optional Xbox LIVE prompt skip (continue offline)
 │   ├── render/gpu_wait_hook.cpp # GPU ring-space wait: yield/sleep instead of busy spin
-│   ├── render/graphics_backend.h/.cpp # GPU plugin load for graphics_backend + Vulkan-only depth defaults
+│   ├── render/graphics_backend.h/.cpp # GPU plugin load for graphics_backend + Vulkan-only depth defaults + large-page upload default
 │   ├── game_patches.h          # Texture-noise fix (guest-memory write)
 │   ├── debug_tools.h           # Stub sweep + missing-function scan
 │   ├── thread_sampler.h/.cpp   # One-shot sampler of the busiest threads (debug)
@@ -137,7 +165,7 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 ├── thirdparty/rexglue-sdk/     # ReXGlue SDK (git submodule)
 ├── tools/
 │   ├── benchmark.ps1           # D3D12 vs Vulkan benchmark runner
-│   ├── benchmark.sh            # Same, for Linux/macOS
+│   ├── benchmark.sh            # Same, for Linux/macOS (no D3D12 there: both runs use Vulkan)
 │   ├── analyze_benchmark.py    # FPS / frame-time statistics from CSV
 │   └── thread_cpu.ps1          # Per-thread CPU use of a running game
 ├── CMakeLists.txt

@@ -25,6 +25,13 @@ set(REXGLUE_USE_VULKAN ON CACHE BOOL "Enable Vulkan graphics backend")
 
 include(generated/rexglue.cmake)
 
+# The SDK sets REXGLUE_ROOT in its own directory scope only, but its macOS
+# Vulkan staging (_rexglue_stage_macos_vulkan_runtime, called through
+# rexglue_setup_target) reads it here to find MoltenVK_icd.json.
+if(APPLE)
+    set(REXGLUE_ROOT "${REXSDK_DIR}")
+endif()
+
 # Sources
 set(PERFECTDARKREMASTERRECOMP_SOURCES
     src/main.cpp
