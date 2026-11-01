@@ -5,6 +5,7 @@
 #include <rex/cvar.h>
 #include <rex/cvar_file.h>
 #include <rex/logging.h>
+#include <rex/memory/utils.h>
 #include <rex/system/gpu_plugin.h>
 
 #include "../game_cvars.h"
@@ -26,6 +27,18 @@ namespace pdr
       rex::cvar::SetDefaultValue("depth_float24_convert_in_pixel_shader", "true");
       rex::cvar::SetDefaultValue("depth_float24_round", "true");
       rex::cvar::SetDefaultValue("depth_bias_shader_offset", "true");
+    }
+
+    // Shared memory uploads whole host pages, but checks only the first guest (4 KB) page of
+    // the first and last host page of the range. With 16 KB host pages (Apple Silicon) that
+    // guest page can be unallocated while the data in the same host page is not, and the
+    // upload then fails: an index buffer is lost and a draw is skipped every frame. This turns
+    // the whole check off; an allocated guest page commits its whole host page, so these
+    // copies are safe.
+    void ApplyLargePageDefaults()
+    {
+      if (rex::memory::page_size() > 4096)
+        rex::cvar::SetDefaultValue("gpu_allow_invalid_upload_range", "true");
     }
   } // namespace
 
@@ -56,5 +69,6 @@ namespace pdr
 
     if (vulkan)
       ApplyVulkanDefaults();
+    ApplyLargePageDefaults();
   }
 } // namespace pdr

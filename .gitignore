@@ -10,4 +10,5 @@ tools/ExportProgramDump.java
 *.log
 
 __pycache__/
+.DS_Store
 tools/re/

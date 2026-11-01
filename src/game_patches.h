@@ -16,10 +16,15 @@ namespace game_patches
   // https://github.com/xenia-canary/game-patches/blob/5c3b70e92c1c050dafd9e35a6c57e1edf4fb1a47/patches/584109C2%20-%20Perfect%20Dark.patch.toml
   static void ApplyTextureNoiseFix()
   {
-#if defined(__linux__)
+#if defined(__linux__) || defined(__APPLE__)
     // This patch is NVIDIA-specific and causes crashes on Linux builds.
     // The memory protection mechanism behaves differently on Linux, and
-    // the patch was designed for the Windows/Xenia environment.
+    // the patch was designed for the Windows/Xenia environment. Macs have
+    // no NVIDIA GPU, so the patch is not needed there.
+    // TODO(Linux): likely cause of the crash: Protect() below passes an
+    // unaligned address, which POSIX mprotect refuses (VirtualProtect rounds
+    // it down), so the write hits a read-only page. Align to
+    // rex::memory::page_size() and test on Linux before enabling it there.
     return;
 #endif
 

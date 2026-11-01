@@ -16,5 +16,5 @@
             "link": "https://github.com/nikolaygorb"
         }
     ],
-    "approach": "Static recompilation of the PowerPC code to x86-64, Direct3D 12 / Vulkan renderer"
+    "approach": "Static recompilation of the PowerPC code to x86-64 / ARM64, Direct3D 12 / Vulkan renderer (MoltenVK on macOS)"
 }

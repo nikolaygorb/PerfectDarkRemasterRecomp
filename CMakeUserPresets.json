@@ -6,6 +6,9 @@
         { "name": "local-win-relwithdebinfo", "inherits": "win-amd64-relwithdebinfo" },
         { "name": "local-lin-debug", "inherits": "linux-amd64-debug" },
         { "name": "local-lin-release", "inherits": "linux-amd64-release" },
-        { "name": "local-lin-relwithdebinfo", "inherits": "linux-amd64-relwithdebinfo" }
+        { "name": "local-lin-relwithdebinfo", "inherits": "linux-amd64-relwithdebinfo" },
+        { "name": "local-mac-debug", "inherits": "mac-arm64-debug" },
+        { "name": "local-mac-release", "inherits": "mac-arm64-release" },
+        { "name": "local-mac-relwithdebinfo", "inherits": "mac-arm64-relwithdebinfo" }
     ]
 }

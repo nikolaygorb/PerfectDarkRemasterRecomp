@@ -17,6 +17,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_optimizations.cmake)
 # Build ReXGlue SDK from source (git submodule)
 set(REXSDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rexglue-sdk" CACHE PATH "Path to rexglue-sdk source tree" FORCE)
 
+# Project patches to the SDK (patches/rexglue-sdk/, each explained in a *.md)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/apply_sdk_patches.cmake)
+
 # Enable both graphics backends
 if(WIN32)
     set(REXGLUE_USE_D3D12 ON CACHE BOOL "Enable D3D12 graphics backend")
@@ -24,6 +27,13 @@ endif()
 set(REXGLUE_USE_VULKAN ON CACHE BOOL "Enable Vulkan graphics backend")
 
 include(generated/rexglue.cmake)
+
+# The SDK sets REXGLUE_ROOT in its own directory scope only, but its macOS
+# Vulkan staging (_rexglue_stage_macos_vulkan_runtime, called through
+# rexglue_setup_target) reads it here to find MoltenVK_icd.json.
+if(APPLE)
+    set(REXGLUE_ROOT "${REXSDK_DIR}")
+endif()
 
 # Sources
 set(PERFECTDARKREMASTERRECOMP_SOURCES

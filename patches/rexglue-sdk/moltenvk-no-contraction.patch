@@ -1,0 +1,100 @@
+diff --git a/include/rex/graphics/pipeline/shader/spirv_builder.h b/include/rex/graphics/pipeline/shader/spirv_builder.h
+index 0dd11c3..ef0bc83 100644
+--- a/include/rex/graphics/pipeline/shader/spirv_builder.h
++++ b/include/rex/graphics/pipeline/shader/spirv_builder.h
+@@ -38,6 +38,13 @@ class SpirvBuilder : public spv::Builder {
+   spv::Id createNoContractionBinOp(spv::Op op_code, spv::Id type_id, spv::Id operand1,
+                                    spv::Id operand2);
+ 
++  // Whether createNoContraction*Op decorate their results with NoContraction.
++  // SPIRV-Cross turns NoContraction arithmetic into calls to [[clang::optnone]]
++  // functions, which Apple GPUs evaluate incorrectly in the helper lanes of
++  // multisampled draws, so derivatives of their results are garbage at
++  // triangle edges.
++  void setNoContraction(bool no_contraction) { no_contraction_ = no_contraction; }
++
+   spv::Id createUnaryBuiltinCall(spv::Id result_type, spv::Id builtins, int entry_point,
+                                  spv::Id operand);
+   spv::Id createBinBuiltinCall(spv::Id result_type, spv::Id builtins, int entry_point,
+@@ -145,6 +152,9 @@ class SpirvBuilder : public spv::Builder {
+ 
+     Branch current_branch_ = Branch::kSelection;
+   };
++
++ private:
++  bool no_contraction_ = true;
+ };
+ 
+ }  // namespace rex::graphics
+diff --git a/include/rex/graphics/pipeline/shader/spirv_translator.h b/include/rex/graphics/pipeline/shader/spirv_translator.h
+index 76fbc89..9b1010d 100644
+--- a/include/rex/graphics/pipeline/shader/spirv_translator.h
++++ b/include/rex/graphics/pipeline/shader/spirv_translator.h
+@@ -445,6 +445,10 @@ class SpirvShaderTranslator : public ShaderTranslator {
+     bool sample_rate_shading;
+ 
+     bool fragment_shader_barycentric;
++
++    // Decorate precise arithmetic with NoContraction (not on MoltenVK, see
++    // SpirvBuilder::setNoContraction).
++    bool no_contraction;
+   };
+ 
+   SpirvShaderTranslator(const Features& features, bool native_2x_msaa_with_attachments,
+diff --git a/src/graphics/pipeline/shader/spirv_builder.cpp b/src/graphics/pipeline/shader/spirv_builder.cpp
+index de8d03d..21b9b14 100644
+--- a/src/graphics/pipeline/shader/spirv_builder.cpp
++++ b/src/graphics/pipeline/shader/spirv_builder.cpp
+@@ -42,14 +42,18 @@ spv::Id SpirvBuilder::createQuadOp(spv::Op op_code, spv::Id type_id, spv::Id ope
+ spv::Id SpirvBuilder::createNoContractionUnaryOp(spv::Op op_code, spv::Id type_id,
+                                                  spv::Id operand) {
+   spv::Id result = createUnaryOp(op_code, type_id, operand);
+-  addDecoration(result, spv::DecorationNoContraction);
++  if (no_contraction_) {
++    addDecoration(result, spv::DecorationNoContraction);
++  }
+   return result;
+ }
+ 
+ spv::Id SpirvBuilder::createNoContractionBinOp(spv::Op op_code, spv::Id type_id, spv::Id operand1,
+                                                spv::Id operand2) {
+   spv::Id result = createBinOp(op_code, type_id, operand1, operand2);
+-  addDecoration(result, spv::DecorationNoContraction);
++  if (no_contraction_) {
++    addDecoration(result, spv::DecorationNoContraction);
++  }
+   return result;
+ }
+ 
+diff --git a/src/graphics/pipeline/shader/spirv_translator.cpp b/src/graphics/pipeline/shader/spirv_translator.cpp
+index 95ec23e..c253949 100644
+--- a/src/graphics/pipeline/shader/spirv_translator.cpp
++++ b/src/graphics/pipeline/shader/spirv_translator.cpp
+@@ -52,7 +52,8 @@ SpirvShaderTranslator::Features::Features(bool all)
+       fragment_shader_sample_interlock(all),
+       demote_to_helper_invocation(all),
+       sample_rate_shading(all),
+-      fragment_shader_barycentric(all) {}
++      fragment_shader_barycentric(all),
++      no_contraction(true) {}
+ 
+ SpirvShaderTranslator::Features::Features(const ui::vulkan::VulkanDevice* const vulkan_device)
+     : max_storage_buffer_range(vulkan_device->properties().maxStorageBufferRange),
+@@ -70,7 +71,8 @@ SpirvShaderTranslator::Features::Features(const ui::vulkan::VulkanDevice* const
+       fragment_shader_sample_interlock(vulkan_device->properties().fragmentShaderSampleInterlock),
+       demote_to_helper_invocation(vulkan_device->properties().shaderDemoteToHelperInvocation),
+       sample_rate_shading(vulkan_device->properties().sampleRateShading),
+-      fragment_shader_barycentric(vulkan_device->properties().fragmentShaderBarycentric) {
++      fragment_shader_barycentric(vulkan_device->properties().fragmentShaderBarycentric),
++      no_contraction(vulkan_device->properties().driverID != VK_DRIVER_ID_MOLTENVK) {
+   const uint32_t vulkan_api_version = vulkan_device->properties().apiVersion;
+   if (vulkan_api_version >= VK_MAKE_API_VERSION(0, 1, 2, 0)) {
+     spirv_version = spv::Spv_1_5;
+@@ -195,6 +197,7 @@ void SpirvShaderTranslator::StartTranslation() {
+   // TODO(Triang3l): Logger.
+   builder_ = std::make_unique<SpirvBuilder>(features_.spirv_version, (kSpirvMagicToolId << 16) | 1,
+                                             nullptr);
++  builder_->setNoContraction(features_.no_contraction);
+ 
+   builder_->addCapability(IsSpirvTessEvalShader() ? spv::CapabilityTessellation
+                                                   : spv::CapabilityShader);
