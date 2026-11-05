@@ -15,7 +15,7 @@ Static recompilation translates the Xbox 360 PowerPC code inside the game's `def
 
 - **Working build.** The project compiles cleanly and the executable boots to real Direct3D 12 rendering with audio, controller support, and the texture-noise fix applied.
 - **Codegen runs clean.** Analysis of `assets/default.xex` produces 0 errors; the code range `0x820C0000-0x825BB934` (≈ 4.8 MB) comes out as 15 032 recompiled functions.
-- **Both graphics backends compiled in.** The SDK is built from source with `REXGLUE_USE_D3D12` and `REXGLUE_USE_VULKAN` both enabled, so `--graphics_backend=d3d12|vulkan` can be switched at runtime.
+- **All graphics backends compiled in.** The SDK is built from source with `REXGLUE_USE_D3D12`, `REXGLUE_USE_VULKAN` and (Windows, experimental) `REXGLUE_USE_D3D11` enabled, so `--graphics_backend=d3d12|vulkan|d3d11` can be switched at runtime.
 - **SDK built from source.** Unlike projects that vendor a prebuilt SDK archive, this repo pulls the ReXGlue SDK as a git submodule at [`thirdparty/rexglue-sdk`](thirdparty/rexglue-sdk) and builds it together with the game, so Tracy profiling and the SDK's perf counters (on in every non-Release build) come with it.
 - **Debug instrumentation wired up.** `win-amd64-relwithdebinfo` builds enable `REXGLUE_ENABLE_PERF_COUNTERS` and link `TracyClientrd.dll`, so per-frame CSV metrics and Tracy profiling both work out of the box. See [`tools/benchmark.ps1`](tools/benchmark.ps1) and [`tools/analyze_benchmark.py`](tools/analyze_benchmark.py).
 
@@ -27,7 +27,8 @@ Static recompilation translates the Xbox 360 PowerPC code inside the game's `def
 - **Optional Xbox LIVE prompt skip** — `pdr_skip_live_prompt = true` answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it (`headless` would pick "Connect to Xbox LIVE" and hang).
 - **Language selection** — set `user_language` in [`settings/hardware.toml`](settings/hardware.toml) (`1` English, `2` Japanese, `3` German, `4` French, `5` Spanish, `6` Italian) and restart.
 - **Split-screen (local players)** — up to four local players can be signed in, with a controller assigned to each. `max_local_users = 2` in [`settings/hardware.toml`](settings/hardware.toml) is on by default: keyboard/mouse + pad 1 is player 1, pad 2 is player 2 (signs in when the pad connects). `keyboard_own_player = true` lets two people share one gamepad, `input_player1` / `input_player2` pick devices explicitly, and each player keeps their own profile options. Details and examples: [`settings/split-screen.md`](settings/split-screen.md).
-- **Dual graphics backend** — pick Direct3D 12 or Vulkan at runtime via `--graphics_backend` or `settings/hardware.toml`.
+- **Native mouse look** — on foot the mouse turns the camera directly, without the game's stick dead zone and response curve (`pdr_mouse_look` and `pdr_mouse_*` in [`settings/mapping.toml`](settings/mapping.toml), code in [`src/mod/mouse_look/`](src/mod/mouse_look/)).
+- **Graphics backend choice** — pick Direct3D 12 or Vulkan at runtime via `--graphics_backend` or `settings/hardware.toml`; Direct3D 11 is also built in on Windows as an experimental fallback for GPUs without D3D12/Vulkan (chosen only by name, never by `"any"`).
 - **Build optimizations** — Release builds use `-O3` with ThinLTO (and `-march=x86-64-v2` on x86-64), RelWithDebInfo `-O2 -g`; see [`cmake/build_optimizations.cmake`](cmake/build_optimizations.cmake).
 - **Texture noise fix** — ported from the community xenia-canary `game-patches` for Perfect Dark (`584109C2`), applied as a direct guest-memory write in [`src/game_patches.h`](src/game_patches.h). Enabled by default in [`settings/hardware.toml`](settings/hardware.toml).
 - **Runtime debug tools** — stub sweep and missing-function scan gated behind the `dev_debug_runtime` cvar; produces `logs/stub_sweep.txt` and `logs/missed_functions.txt` for ongoing work on unregistered addresses. A thread sampler (`pdr_sample_threads_after_s` / `pdr_sample_threads_duration_s`) logs the busiest threads' hottest functions once, `pdr_log_gpu_wait` logs render-thread GPU waits, and [`tools/thread_cpu.ps1`](tools/thread_cpu.ps1) prints per-thread CPU use of a running game.
@@ -92,7 +93,7 @@ Useful flags/env vars while developing:
 | Flag / env var | Effect |
 |---|---|
 | `--game_data_root <path>` | Overrides the default `<repo_root>/assets` game-files location. |
-| `--graphics_backend d3d12\|vulkan\|any` | Forces the graphics API `rexgpu-xenos` uses. Default `"any"` picks D3D12 first. |
+| `--graphics_backend d3d12\|vulkan\|d3d11\|any` | Forces the graphics API `rexgpu-xenos` uses. Default `"any"` picks D3D12 first (Vulkan on Linux); `d3d11` is experimental and only used when named. |
 | `--gpu_plugin xenos` | Overrides `settings/hardware.toml`'s `gpu_plugin`. |
 | `--pdr_gpu_wait_mode 0\|1\|2` | Render thread wait for the GPU: busy spin, yield (default), sleep. |
 | `--pdr_tp_enable true` | Third-person camera on at start (or press `V` in game); offsets: `pdr_tp_offset_x/y/z`. |
@@ -116,6 +117,8 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 │   └── default/                #   *.cpp / *.h per partition
 ├── out/                        # Build output (gitignored)
 ├── settings/                   # Checked-in hardware.toml / mapping.toml / gamecontrollerdb.txt
+│                               #   + docs: README, split-screen, faq (graphics options),
+│                               #   texture-replacement, gpu-traces
 ├── src/
 │   ├── main.cpp                # REX_DEFINE_APP entry point
 │   ├── perfectdarkremasterrecomp_app.h   # App hooks (OnPreSetup, OnPostSetup, ...)
@@ -127,9 +130,12 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 │   ├── math/vec3.h             # Vector math
 │   ├── audio/event_queue.cpp   # Fix: empty audio event queue no longer locks up the game
 │   ├── mod/third_person/       # Third-person camera mod, one file per job
+│   ├── mod/mouse_look/         # Native mouse look (pdr_mouse_*)
 │   ├── platform/live_prompt.cpp # Optional Xbox LIVE prompt skip (continue offline)
 │   ├── render/gpu_wait_hook.cpp # GPU ring-space wait: yield/sleep instead of busy spin
-│   ├── render/graphics_backend.h/.cpp # GPU plugin load for graphics_backend + Vulkan-only depth defaults
+│   ├── render/glare_query_wait.cpp # Light glares wait for occlusion results (pdr_glare_query_wait_ms)
+│   ├── render/graphics_backend.h/.cpp # GPU plugin load for graphics_backend
+│   ├── render/native_memory_hook.cpp # The XDK's memcpy/memset/memmove routed to native code (REX_NATIVE_MEMORY_HOOKS)
 │   ├── game_patches.h          # Texture-noise fix (guest-memory write)
 │   ├── debug_tools.h           # Stub sweep + missing-function scan
 │   ├── thread_sampler.h/.cpp   # One-shot sampler of the busiest threads (debug)
@@ -152,7 +158,7 @@ Rendering/window/vsync, split-screen (local players) and input-backend defaults 
 
 1. `rexglue init --project-name perfectdarkremasterrecomp --xex-path assets/default.xex` generated `CMakeLists.txt`, `CMakePresets.json`, `perfectdarkremasterrecomp_manifest.toml`, `generated/rexglue.cmake`, `src/main.cpp`, `src/perfectdarkremasterrecomp_app.h`.
 2. Added the ReXGlue SDK as a git submodule at `thirdparty/rexglue-sdk` and pointed `REXSDK_DIR` at it in `CMakeLists.txt` — the SDK is built from source rather than a prebuilt archive.
-3. Enabled both graphics backends (`REXGLUE_USE_D3D12` on Windows, `REXGLUE_USE_VULKAN` everywhere) and set per-build-type compiler flags in [`cmake/build_optimizations.cmake`](cmake/build_optimizations.cmake).
+3. Enabled the graphics backends (`REXGLUE_USE_D3D12` and the experimental `REXGLUE_USE_D3D11` on Windows, `REXGLUE_USE_VULKAN` everywhere) and set per-build-type compiler flags in [`cmake/build_optimizations.cmake`](cmake/build_optimizations.cmake).
 4. Added `GPU_PLUGINS xenos` to the `rexglue_setup_target()` call in `CMakeLists.txt` so `rexgpu-xenos*.dll` gets staged next to the exe.
 5. Added `src/game_patches.h` with the texture-noise fix (ported from xenia-canary `game-patches` for `584109C2`), applied in `OnPostLoadXexImage()`.
 6. Added `src/debug_tools.h` with the stub sweep and missing-function scan, gated behind the `dev_debug_runtime` cvar so they don't run by default.

@@ -9,7 +9,7 @@
 
 gpu_plugin = "xenos"
 # "any" (d3d12 - win default, vulkan - lin default)
-# "d3d12" / "vulkan"
+# "d3d12" / "vulkan" / "d3d11" (Experimental)
 graphics_backend = "any"
 vsync = true
 resolution_scale = 1
@@ -23,9 +23,6 @@ anisotropic_override = 1
 present_fsr_quality_mode = "auto"
 present_fsr_max_upsampling_passes = 1
 present_cas_additional_sharpness = 0.2
-xenos_sample_positions = false
-use_fuzzy_alpha_epsilon = false
-force_depth_clamp = false
 
 window_width = 1920
 window_height = 1080
@@ -35,18 +32,20 @@ resolution = "1920x1080"
 
 texture_cache_memory_limit_soft = 1024
 texture_cache_memory_limit_hard = 4096
-clear_memory_page_state = true
 readback_memexport = true
 readback_memexport_fast = true
 readback_resolve  = "fast"
 host_present_from_non_ui_thread	= true
 execute_unclipped_draw_vs_on_cpu = true
 gpu_allow_invalid_fetch_constants = true
+occlusion_query = "async"
+depth_float24_convert_in_pixel_shader = true
+depth_bias_shader_offset = true
+
 render_target_path_d3d12 = "rtv"
 render_target_path_vulkan = "fbo"
 store_shaders = true
 present_letterbox = true
-occlusion_query = "async"
 
 d3d12_adapter = -1
 d3d12_allow_variable_refresh_rate_and_tearing = true
@@ -65,6 +64,12 @@ vulkan_log_debug_messages = false
 vulkan_allow_present_mode_immediate = true
 vulkan_allow_present_mode_fifo_relaxed = false
 vulkan_allow_present_mode_mailbox = false
+vulkan_hoist_shared_memory_uploads = true
+
+d3d11_adapter = -1
+d3d11_block_compressed_textures = true
+d3d11_resolve_into_textures = false
+d3d11_debug = false
 
 # XBLA license bypass. SDK cvar (rexglue-sdk/src/kernel/xam/xam_content.cpp)
 # read by XamContentGetLicenseMask_entry. Default 0 means "no licenses" so

@@ -2446,7 +2446,7 @@
 0x823544C8 = { name = "pd_texdecompress_get_pool_left_pos", size = 0x8 }
 0x82595908 = { name = "pd_xdk_user_get_signin_state", size = 0x4 }
 0x82595D78 = { name = "pd_xdk_show_message_box_ui", size = 0x28 }
-0x825A15F0 = { name = "pd_bg_get_stage_index", size = 0xA0 }
+0x825A15F0 = { name = "pd_libc_memset", size = 0xA0 }
 0x825A1990 = { name = "pd_libc_sinf", size = 0xE0 }
 0x825A1A70 = { name = "pd_libc_cosf", size = 0xE0 }
 0x825A1B50 = { name = "pd_libc_floorf", size = 0x3C }

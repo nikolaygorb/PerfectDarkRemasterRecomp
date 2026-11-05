@@ -13,7 +13,6 @@ REXCVAR_DECLARE(int32_t, pdr_sample_threads_after_s);
 REXCVAR_DECLARE(int32_t, pdr_sample_threads_duration_s);
 REXCVAR_DECLARE(int32_t, pdr_gpu_wait_mode);
 REXCVAR_DECLARE(int32_t, pdr_glare_query_wait_ms);
-REXCVAR_DECLARE(bool, pdr_vulkan_float24_depth);
 REXCVAR_DECLARE(bool, pdr_tp_enable);
 REXCVAR_DECLARE(double, pdr_tp_offset_x);
 REXCVAR_DECLARE(double, pdr_tp_offset_y);

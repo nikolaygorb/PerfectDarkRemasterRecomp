@@ -9,6 +9,9 @@ this README.
 | [`hardware.toml`](hardware.toml) | Renderer/backend, window, vsync, resolution, debug output, gameplay patches, the third-person mod and split-screen (local players) |
 | [`mapping.toml`](mapping.toml) | Input backend selection (gamepad/keyboard+mouse), key bindings, mod hotkeys |
 | [`gamecontrollerdb.txt`](gamecontrollerdb.txt) | SDL gamepad mappings for controllers it doesn't already recognize - not hand-authored, see below |
+| [`split-screen.md`](split-screen.md) | Split-screen (local players): devices, examples, troubleshooting |
+| [`faq.md`](faq.md) | Graphics options of the SDK: every rendering cvar, backends (incl. Direct3D 11), shader cache, debugging. Copy of the SDK's `docs/graphics-options.md` |
+| [`texture-replacement.md`](texture-replacement.md) / [`gpu-traces.md`](gpu-traces.md) | HD texture packs; GPU frame traces. Copies of the SDK's docs |
 
 Split in two on purpose: rendering/perf tweaks and input tweaks are separate
 concerns you'll want to touch independently (SOLID/DRY - one file per
@@ -27,26 +30,28 @@ removed).
 
 | Key | Type | Default | Effect |
 |---|---|---|---|
-| `gpu_plugin` | string | `"xenos"` | GPU emulation plugin to load. Set here rather than on the command line now - see root [README](../README.md#run). A `--gpu_plugin` flag would still override this file if you ever needed a different plugin. |
-| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, or `"vulkan"`. Project-defined cvar (not from the SDK), wired up in [`src/render/graphics_backend.cpp`](../src/render/graphics_backend.cpp) (called from `OnPreSetup`) - it loads the plugin itself, with the requested backend or `"any"`, so the SDK's own auto-load is skipped and the plugin's cvars are registered before `pdr_vulkan_float24_depth` is applied. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
+| `gpu_plugin` | string | `""` (`"xenos"` in the checked-in file) | GPU emulation plugin to load. Set here rather than on the command line now - see root [README](../README.md#run). A `--gpu_plugin` flag would still override this file if you ever needed a different plugin. |
+| `graphics_backend` | string | `"any"` | Graphics API backend: `"any"` (D3D12 first when both are compiled in), `"d3d12"`, `"vulkan"`, or `"d3d11"` (experimental, Windows only, never picked by `"any"` - see [`faq.md`](faq.md#direct3d-11-experimental)). Project-defined cvar (not from the SDK), wired up in [`src/render/graphics_backend.cpp`](../src/render/graphics_backend.cpp) (called from `OnPreSetup`) - it loads the plugin itself, with the requested backend or `"any"`, so the SDK's own auto-load is skipped. Falls back to automatic selection with a warning if the requested backend isn't compiled into `rexgpu-xenos`. |
 | `vsync` | bool | `true` | Vertical sync. |
 | `resolution_scale` | int | `1` | Internal render-target supersampling, independent of window/guest resolution. |
 | `async_shader_compilation` | bool | `true` | Compile shaders on a background thread instead of blocking the render thread - reduces hitches when new shaders are first seen. |
-| `native_2x_msaa` | bool | `false` | Native 2x MSAA on the emulated render targets. |
-| `anisotropic_override` | int | `0` | Forces anisotropic texture filtering to this level (e.g. `16`); `0` leaves the game's own setting alone. |
-| `window_width` / `window_height` | int | `1280` / `720` | Host window size. |
-| `fullscreen` | bool | `false` | Host window fullscreen. |
+| `native_2x_msaa` | bool | `true` (`false` in the checked-in file) | Native 2x MSAA on the emulated render targets. |
+| `anisotropic_override` | int | `3` (`1` in the checked-in file) | Forces anisotropic texture filtering: `-1` no override (the game's own setting), `0` off, `1` = 1x, `2` = 2x, `3` = 4x, `4` = 8x, `5` = 16x. |
+| `window_width` / `window_height` | int | `0` / `0` (`1920` / `1080` in the checked-in file) | Host window size; `0` = automatic. |
+| `fullscreen` | bool | `true` | Host window fullscreen. |
 | `monitor` | int | `0` | Host monitor index for fullscreen. |
-| `resolution` | string | `"1280x720"` | Guest ("TV") video mode reported to the game - affects the game's own UI scale/aspect logic, separate from the host window size above. |
+| `resolution` | string | `""` (`"1920x1080"` in the checked-in file) | Guest ("TV") video mode reported to the game - affects the game's own UI scale/aspect logic, separate from the host window size above. |
 | `present_letterbox` | bool | `true` | Letterbox instead of stretch when window and guest aspect ratios differ. |
 | `d3d12_debug` | bool | `false` | D3D12 debug layer. Leave off - noticeably slower. |
 | `license_mask` | int | `0` | SDK cvar, read by `XamContentGetLicenseMask_entry` in `rexglue-sdk/src/kernel/xam/xam_content.cpp`. Each bit represents a granted license; bit 0 is "purchased". Default `0` makes XBLA titles run as trial and show "UNLOCK FULL VERSION". Set to `4294967295` (`0xFFFFFFFF`) to claim every license bit. |
 | `headless` | bool | `false` | SDK cvar, read by `XamShowMessageBoxUI_entry` in `rexglue-sdk/src/kernel/xam/xam_ui.cpp`. When `true`, message-box dialogs auto-pick the active button instead of showing an ImGui dialog. Not for the startup "Gamer Profile not online" box: its active button is "Connect to Xbox LIVE", and the game then hangs waiting for LIVE - use `pdr_skip_live_prompt` for that one. |
 | `pdr_texture_noise_fix` | bool | `false` | Experimental. Ported from the community xenia-canary `game-patches` "Fix texture noise on NVIDIA GPUs" patch for Perfect Dark (title `584109C2`). The address (`0x82014B7B`) is a plain data constant with no corresponding C++ statement, so it's applied as a direct guest-memory write by `ApplyTextureNoiseFix()` in [`src/game_patches.h`](../src/game_patches.h), called from `OnPostLoadXexImage()`. Skipped on Linux. Off by default, matching upstream. |
 | `pdr_gpu_wait_mode` | int | `1` | How the render thread waits for free GPU command-ring space: `0` busy spin (original), `1` yield the core, `2` sleep 200 µs. |
-| `occlusion_query` | string | `"fast"` | SDK cvar. Light glares test their visibility with occlusion queries and read the results three frames later. `"fast"` hands them a "visible" guess, so glares show through walls; `"async"` writes only real results; `"strict"` is correct too but much slower. |
+| `occlusion_query` | string | `"fast"` (`"async"` in the checked-in file) | SDK cvar. Light glares test their visibility with occlusion queries and read the results three frames later. `"fast"` hands them a "visible" guess, so glares show through walls; `"async"` writes only real results; `"strict"` is correct too but much slower. |
+| `depth_float24_convert_in_pixel_shader` / `depth_bias_shader_offset` | bool | `false` / `false` (both `true` in the checked-in file) | SDK cvars. Convert float24 depth in the pixel shader, and apply depth bias in the shader with a constant unit. The light glares' occlusion tests against the scene's depth need them (without them glares strobe or vanish on Vulkan). Set for every backend; which draws the shader bias covers is set by `depth_bias_shader_offset_scope` (see [`faq.md`](faq.md#accuracy-settings-per-game)). |
+| `vulkan_hoist_shared_memory_uploads` | bool | `false` (`true` in the checked-in file) | SDK cvar, Vulkan only. Uploads vertex/index data the game rewrote mid-frame before the current batch of draws instead of breaking the batch for each upload. Turn off if geometry flickers. |
+| `d3d11_adapter`, `d3d11_block_compressed_textures`, `d3d11_resolve_into_textures`, `d3d11_debug` | | `-1`, `true`, `false`, `false` | SDK cvars for the experimental Direct3D 11 backend (`graphics_backend = "d3d11"`); ignored on the other backends. See [`faq.md`](faq.md#direct3d-11-experimental). |
 | `pdr_glare_query_wait_ms` | int | `30` | With `occlusion_query = "async"` or `"strict"`, how long a glare waits for an occlusion result that is not ready yet instead of being hidden (`0` = don't wait). Hook in [`src/render/glare_query_wait.cpp`](../src/render/glare_query_wait.cpp). |
-| `pdr_vulkan_float24_depth` | bool | `true` | On Vulkan only, makes `true` the default of `depth_float24_convert_in_pixel_shader`, `depth_float24_round` and `depth_bias_shader_offset` before the GPU starts ([`src/render/graphics_backend.cpp`](../src/render/graphics_backend.cpp)). Without them the light glares' occlusion tests against the scene's depth always fail on Vulkan (glares strobe or vanish). Not on D3D12: there they make the gun and hands sink into the floor and hide the glares. Only the defaults change: a line for one of them in `hardware.toml` or a `--flag` wins on both backends, so leave them out of the file; "Save to config" doesn't write the Vulkan values. Works with `graphics_backend = "any"` too (Vulkan on Linux). |
 | `pdr_tp_enable` | bool | `false` | Third-person camera mod (solo only); also toggled in game with `bind_third_person`. See [`src/mod/third_person/README.md`](../src/mod/third_person/README.md). |
 | `pdr_tp_offset_x` / `_y` / `_z` | double | `35` / `15` / `-170` | Third-person camera offset from the eye, camera-local, in game units (~cm): right, up, forward (negative = behind). |
 | `pdr_skip_live_prompt` | bool | `false` | Answers the startup "Gamer Profile not online" box with "Continue playing offline" instead of showing it. |
@@ -78,15 +83,16 @@ The runtime only tells the game who is signed in and which controller belongs to
 |---|---|---|---|
 | `input_backend` | string | `"sdl"` | `""` is rejected by validation (logs a warning, falls back to default) - must be an explicit `"sdl"` or `"xinput"`. |
 | `hid_mappings_file` | string | `"gamecontrollerdb.txt"` | Extra SDL gamepad mappings loaded for controllers SDL doesn't already recognize, or `""` to skip. `gamecontrollerdb.txt` next to the exe is staged by `CMakeLists.txt` from [`gamecontrollerdb.txt`](gamecontrollerdb.txt) in this folder, sourced from [mdqinc/SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB) - re-copy that file from upstream any time to refresh it. |
-| `guide_button` | bool | `true` | Whether the controller Guide/PS button is routed to the guest. |
-| `mnk_mode` | bool | `true` | Enables keyboard-as-controller input, merged in alongside any physical gamepad (see below). |
-| `mnk_mouse` | bool | `true` | Routes mouse movement to the right stick when `mnk_mode` is on. Off means the right stick only comes from the `keybind_rstick_*` keys. |
+| `guide_button` | bool | `false` (`true` in the checked-in file) | Whether the controller Guide/PS button is routed to the guest. |
+| `mnk_mode` | bool | `false` (`true` in the checked-in file) | Enables keyboard-as-controller input, merged in alongside any physical gamepad (see below). |
+| `mnk_mouse` | bool | `false` (`true` in the checked-in file) | Routes mouse movement to the right stick when `mnk_mode` is on. Off means the right stick only comes from the `keybind_rstick_*` keys. |
 | `mnk_sensitivity` | double | `1.0` | Mouse sensitivity for the right stick, range `0.01`-`10.0`. With `pdr_mouse_look` on it only applies where native mouse look doesn't run (menus, hoverbike, CamSpy). |
 | `pdr_mouse_look` | bool | `true` | Native mouse look: on foot the mouse turns the camera directly, skipping the game's stick dead zone and response curve. Hook in [`src/mod/mouse_look/hook.cpp`](../src/mod/mouse_look/hook.cpp). Needs `mnk_mode` and `mnk_mouse`. |
 | `pdr_mouse_sensitivity` | double | `2.0` | Native mouse look: camera turn per mouse count = 0.022 deg x this. Range `0.01`-`100.0`. Independent of the in-game sensitivity option. |
 | `pdr_mouse_invert_x` / `pdr_mouse_invert_y` | bool | `false` | Invert native mouse look axes. The in-game Look Up/Down option doesn't apply to it. |
 | `pdr_mouse_zoom_scaling` | bool | `true` | Scale native mouse look by `tan(fov/2) / tan(60deg/2)` while zoomed, so the picture moves under the mouse at the same rate. |
-| `pdr_mouse_zoom_sensitivity` | double | `1.0` | Extra factor on native mouse look while zoomed in. || `keybind_*` | string | | Keyboard keys for each controller button / stick direction (comma-separated alternatives, e.g. `"Z,Tab"`). |
+| `pdr_mouse_zoom_sensitivity` | double | `1.0` | Extra factor on native mouse look while zoomed in. |
+| `keybind_*` | string | | Keyboard keys for each controller button / stick direction (comma-separated alternatives, e.g. `"Z,Tab"`). The checked-in layout: `Q` = X, `E` = Y, `RMB`/`I` = aim (LT), `LMB`/`O` = fire (RT); the rest is in [`mapping.toml`](mapping.toml). |
 | `bind_third_person` | string | `"V"` | Toggles the third-person camera. Registered by the app in `OnCreateDialogs()`, so it can be rebound here. |
 
 Gamepad button layout itself (DualShock 4, DualSense, Xbox, Switch Pro, ...)

@@ -56,12 +56,12 @@ pdr_mouse_zoom_sensitivity = 1.0
 # Controller buttons
 keybind_a = "Semicolon,Space"          # A button
 keybind_b = "Quote,Backspace"          # B button
-keybind_x = "L"                        # X button
-keybind_y = "P"                        # Y button
+keybind_x = "Q"                        # X button
+keybind_y = "E"                        # Y button
 
 # Triggers (analog)
-keybind_left_trigger = "Q,I,RMB"       # Left trigger (aim)
-keybind_right_trigger = "E,O,LMB"      # Right trigger (fire)
+keybind_left_trigger = "I,RMB"       # Left trigger (aim)
+keybind_right_trigger = "O,LMB"      # Right trigger (fire)
 
 # Shoulder buttons
 keybind_left_shoulder = "1"            # Left shoulder (LB)

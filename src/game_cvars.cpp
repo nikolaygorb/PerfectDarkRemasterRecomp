@@ -1,8 +1,8 @@
 #include "game_cvars.h"
 
 REXCVAR_DEFINE_STRING(graphics_backend, "any", "GPU",
-                      "Graphics API backend: any, d3d12, vulkan")
-    .allowed({"any", "d3d12", "vulkan"});
+                      "Graphics API backend: any, d3d12, vulkan, d3d11 (experimental)")
+    .allowed({"any", "d3d12", "d3d11", "vulkan"});
 
 // Experimental port of the community xenia-canary "Fix texture noise on
 // NVIDIA GPUs" patch for Perfect Dark (584109C2). Off by default to match
@@ -28,12 +28,6 @@ REXCVAR_DEFINE_INT32(pdr_gpu_wait_mode, 1, "Performance",
                      "0 = busy spin (original), 1 = yield the core, 2 = sleep 200us")
     .range(0, 2)
     .lifecycle(rex::cvar::Lifecycle::kHotReload);
-
-REXCVAR_DEFINE_BOOL(pdr_vulkan_float24_depth, true, "GPU",
-                    "On Vulkan, convert float24 depth in the pixel shader (depth_float24_convert_in_"
-                    "pixel_shader, depth_float24_round, depth_bias_shader_offset), which light glares "
-                    "need. Not applied on D3D12, where it breaks the depth of the gun and hands")
-    .lifecycle(rex::cvar::Lifecycle::kRequiresRestart);
 
 REXCVAR_DEFINE_INT32(pdr_glare_query_wait_ms, 30, "GPU",
                      "Light glares read their occlusion queries three frames later. With "
